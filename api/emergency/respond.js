@@ -52,8 +52,18 @@ export default async function handler(req, res) {
       .select();
 
     if (updateError) {
-      console.error('Emergency response update error:', updateError);
-      return res.status(500).json({ error: 'Database update error' });
+      console.error('Emergency response update error:', {
+        error: updateError,
+        code: updateError.code,
+        message: updateError.message,
+        details: updateError.details,
+        hint: updateError.hint
+      });
+      return res.status(500).json({ 
+        error: 'Database update error',
+        debug: updateError.message,
+        code: updateError.code
+      });
     }
 
     if (!updatedRequests || updatedRequests.length === 0) {

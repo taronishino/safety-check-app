@@ -45,8 +45,18 @@ export default async function handler(req, res) {
       .limit(1);
 
     if (error) {
-      console.error('Emergency requests fetch error:', error);
-      return res.status(500).json({ error: 'Database error' });
+      console.error('Emergency requests fetch error:', {
+        error: error,
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      });
+      return res.status(500).json({ 
+        error: 'Database error',
+        debug: error.message,
+        code: error.code
+      });
     }
 
     const hasPendingRequests = emergencyRequests && emergencyRequests.length > 0;

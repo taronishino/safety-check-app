@@ -75,8 +75,18 @@ export default async function handler(req, res) {
       .single();
 
     if (requestError) {
-      console.error('Emergency request creation error:', requestError);
-      return res.status(500).json({ error: 'Failed to create emergency request' });
+      console.error('Emergency request creation error:', {
+        error: requestError,
+        code: requestError.code,
+        message: requestError.message,
+        details: requestError.details,
+        hint: requestError.hint
+      });
+      return res.status(500).json({ 
+        error: 'Failed to create emergency request',
+        debug: requestError.message,
+        code: requestError.code
+      });
     }
 
     // アクティビティログとして記録

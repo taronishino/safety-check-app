@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>子用 - Safety Check</title>
+    
+    <!-- PWA メタタグ -->
+    <meta name="description" content="子用 - 安全確認アプリ">
+    <meta name="theme-color" content="#4ECDC4">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Safety Check 子用">
+    
+    <!-- PWA manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- アイコン -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        .parent-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid #4ECDC4;
+        }
+        .parent-status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-safe {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .btn {
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+        .btn-primary {
+            background: #4ECDC4;
+            color: white;
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+        input[type="email"], input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .log {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 12px;
+            color: #666;
+        }
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.9);
+            border: none;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .user-info {
+            background: #e8f5e8;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+            color: #2e7d32;
+        }
+        .emergency-section {
+            background: #fff5f5;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border: 2px solid #feb2b2;
+        }
+        .emergency-title {
+            color: #c53030;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .last-activity {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <!-- プッシュ通知スクリプトを追加 -->
+    <script src="/push-notification.js"></script>
+    <button class="back-btn" onclick="location.href='index.html'">🏠</button>
+    
+    <div class="container">
+        <h1>👨👩 子用アプリ</h1>
+        
+        <!-- ログイン画面 -->
+        <div id="loginSection">
+            <div class="input-group">
+                <label>メールアドレス</label>
+                <input type="email" id="email" value="test@example.com" placeholder="メールアドレス">
+            </div>
+            <div class="input-group">
+                <label>パスワード</label>
+                <input type="password" id="password" value="testpass123" placeholder="パスワード">
+            </div>
+            <button class="btn btn-primary" onclick="login()">ログイン</button>
+        </div>
+
+        <!-- メイン画面 -->
+        <div id="mainSection" style="display: none;">
+            <div class="user-info" id="userInfo"></div>
+            
+            <!-- 緊急確認セクション -->
+            <div class="emergency-section">
+                <div class="emergency-title">🚨 緊急確認</div>
+                <button class="btn btn-danger" onclick="sendEmergencyCheck()">
+                    すべての親に緊急確認を送信
+                </button>
+            </div>
+
+            <!-- 親の状態表示 -->
+            <div id="parentsStatus">
+                <h3>👴👵 親の安全状況</h3>
+                <div id="parentsList"></div>
+            </div>
+
+            <!-- 監視設定セクション -->
+            <div class="emergency-section" style="background: #f0f8ff; border-color: #4ECDC4;">
+                <div class="emergency-title" style="color: #2e7d32;">⚙️ 監視設定</div>
+                <div id="parentSettingsList"></div>
+            </div>
+
+            <!-- 家族の位置情報セクション -->
+            <div class="emergency-section" style="background: #fff8e1; border-color: #ffa726;">
+                <div class="emergency-title" style="color: #f57c00;">📍 家族の位置情報</div>
+                <div id="familyLocationsList"></div>
+                <button class="btn btn-primary" onclick="refreshFamilyLocations()" style="margin-top: 10px;">
+                    🔄 位置情報を更新
+                </button>
+            </div>
+
+            <button class="btn btn-primary" onclick="refreshStatus()">
+                🔄 状況を更新
+            </button>
+
+            <button class="btn btn-secondary" onclick="logout()">
+                ログアウト
+            </button>
+            
+            <!-- 通知設定ボタンを追加 -->
+            <button class="btn btn-primary" onclick="setupNotifications()" style="background: #9c27b0; margin-top: 10px;">
+                🔔 プッシュ通知を有効化
+            </button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h3>📋 ログ</h3>
+        <div class="log" id="logArea"></div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        let authToken = localStorage.getItem('childAuthToken');
+        let userInfo = null;
+        let parentsData = [];
+
+        // 初期化
+        if (authToken) {
+            checkAuth();
+        }
+
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            if (!email || !password) {
+                addLog('❌ メールアドレスとパスワードを入力してください', 'error');
+                return;
+            }
+
+            try {
+                addLog('🔄 ログイン中...', 'info');
+                
+                const response = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    authToken = data.token;
+                    userInfo = data.user;
+                    localStorage.setItem('childAuthToken', authToken);
+                    
+                    addLog('✅ ログイン成功', 'success');
+                    showMainSection();
+                } else {
+                    addLog(`❌ ログインエラー: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                addLog(`❌ 通信エラー: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkAuth() {
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/me`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    userInfo = data.user;
+                    showMainSection();
+                } else {
+                    localStorage.removeItem('childAuthToken');
+                    authToken = null;
+                }
+            } catch (error) {
+                addLog(`❌ 認証確認エラー: ${error.message}`, 'error');
+            }
+        }
+
+        function showMainSection() {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('mainSection').style.display = 'block';
+            
+            document.getElementById('userInfo').textContent = 
+                `👤 ${userInfo.name} (${userInfo.email})`;
+            
+            loadParentsStatus();
+            addLog('✅ ログイン完了', 'success');
+        }
+
+        async function loadParentsStatus() {
+            try {
+                addLog('🔄 親の情報を読み込み中...', 'info');
+
+                // 関係性を取得
+                const relationshipsResponse = await fetch(`${API_BASE}/api/pairing/relationships`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (!relationshipsResponse.ok) {
+                    addLog('❌ 関係性の取得に失敗しました', 'error');
+                    return;
+                }
+
+                const relationshipsData = await relationshipsResponse.json();
+                parentsData = relationshipsData.relationships || [];
+
+                // 通知設定を取得
+                const notificationResponse = await fetch(`${API_BASE}/api/multi-parent/notification-settings`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                let notificationSettings = [];
+                if (notificationResponse.ok) {
+                    const notificationData = await notificationResponse.json();
+                    notificationSettings = notificationData.settings || [];
+                }
+
+                displayParentsStatus(parentsData, notificationSettings);
+                displayParentSettings(parentsData, notificationSettings);
+                await loadFamilyLocations();
+                addLog(`✅ ${parentsData.length}名の親情報を読み込みました`, 'success');
+
+            } catch (error) {
+                addLog(`❌ 親情報読み込みエラー: ${error.message}`, 'error');
+            }
+        }
+
+        function displayParentsStatus(parents, settings) {
+            const parentsList = document.getElementById('parentsList');
+            
+            if (parents.length === 0) {
+                parentsList.innerHTML = '<div class="parent-card">登録されている親がいません</div>';
+                return;
+            }
+
+            parentsList.innerHTML = parents.map(parent => {
+                const setting = settings.find(s => s.parent_id === parent.parent_id) || {};
+                const status = getParentStatus(parent, setting);
+                
+                return `
+                    <div class="parent-card">
+                        <div class="parent-status">
+                            <div>
+                                <strong>${setting.nickname || parent.parent_name || 'Unknown'}</strong>
+                                <div style="font-size: 12px; color: #666;">
+                                    ${setting.relationship_type || 'parent'}
+                                </div>
+                            </div>
+                            <span class="status-badge status-${status.type}">
+                                ${status.text}
+                            </span>
+                        </div>
+                        <div class="last-activity">
+                            🔋 バッテリー: --% | 📍 最終確認: ${parent.last_activity || '--'}
+                        </div>
+                        <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                            通知間隔: ${setting.threshold_hours || 24}時間 | 
+                            優先度: ${setting.priority || 1}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function getParentStatus(parent, setting) {
+            // 実際の状態判定ロジック（仮想的な実装）
+            const now = new Date();
+            const lastActivity = new Date(parent.last_activity || now);
+            const hoursSinceActivity = (now - lastActivity) / (1000 * 60 * 60);
+            const threshold = setting.threshold_hours || 24;
+
+            if (hoursSinceActivity < threshold * 0.5) {
+                return { type: 'safe', text: '✅ 安全' };
+            } else if (hoursSinceActivity < threshold) {
+                return { type: 'warning', text: '⚠️ 注意' };
+            } else {
+                return { type: 'danger', text: '🚨 要確認' };
+            }
+        }
+
+        function displayParentSettings(parents, settings) {
+            const parentSettingsList = document.getElementById('parentSettingsList');
+            
+            if (parents.length === 0) {
+                parentSettingsList.innerHTML = '<div style="text-align: center; color: #666;">設定可能な親がいません</div>';
+                return;
+            }
+
+            parentSettingsList.innerHTML = parents.map(parent => {
+                const setting = settings.find(s => s.parent_id === parent.parent_id) || {};
+                const isEnabled = setting.enabled !== false;
+                
+                return `
+                    <div style="background: white; padding: 10px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #ddd;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>${setting.nickname || parent.parent_name || 'Unknown'}</strong>
+                                <div style="font-size: 12px; color: #666;">
+                                    ${setting.relationship_type || 'parent'}
+                                </div>
+                            </div>
+                            <label style="display: flex; align-items: center; gap: 5px;">
+                                <input type="checkbox" 
+                                       ${isEnabled ? 'checked' : ''} 
+                                       onchange="toggleParentMonitoring('${parent.parent_id}', this.checked)">
+                                <span style="font-size: 12px;">監視ON/OFF</span>
+                            </label>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function toggleParentMonitoring(parentId, enabled) {
+            try {
+                addLog(`🔄 ${enabled ? '監視を有効化' : '監視を無効化'}中...`, 'info');
+                
+                const response = await fetch(`${API_BASE}/api/settings/parent-monitoring/${parentId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        enable_monitoring: enabled
+                    })
+                });
+
+                if (response.ok) {
+                    addLog(`✅ 監視設定を${enabled ? '有効化' : '無効化'}しました`, 'success');
+                    // 状況を再読み込み
+                    await loadParentsStatus();
+                } else {
+                    const data = await response.json();
+                    addLog(`❌ 監視設定エラー: ${data.error}`, 'error');
+                    // エラー時はチェックボックスを元に戻す
+                    await loadParentsStatus();
+                }
+            } catch (error) {
+                addLog(`❌ 監視設定失敗: ${error.message}`, 'error');
+                // エラー時はチェックボックスを元に戻す
+                await loadParentsStatus();
+            }
+        }
+
+        // 家族の位置情報を読み込み
+        async function loadFamilyLocations() {
+            try {
+                addLog('🔄 家族の位置情報を読み込み中...', 'info');
+
+                const response = await fetch(`${API_BASE}/api/location/family`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    displayFamilyLocations(data.family_locations || []);
+                    addLog('✅ 家族の位置情報を読み込みました', 'success');
+                } else {
+                    addLog('❌ 家族の位置情報の取得に失敗しました', 'error');
+                }
+            } catch (error) {
+                addLog(`❌ 家族位置情報読み込みエラー: ${error.message}`, 'error');
+            }
+        }
+
+        // 家族の位置情報を表示
+        function displayFamilyLocations(familyLocations) {
+            const familyLocationsList = document.getElementById('familyLocationsList');
+            
+            if (familyLocations.length === 0) {
+                familyLocationsList.innerHTML = '<div style="text-align: center; color: #666;">位置情報を共有している家族がいません</div>';
+                return;
+            }
+
+            familyLocationsList.innerHTML = familyLocations.map(family => {
+                const hasLocation = family.location && family.sharing_enabled;
+                
+                let locationInfo = '';
+                let locationStyle = '';
+                
+                if (!family.sharing_enabled) {
+                    locationInfo = '位置情報共有が無効です';
+                    locationStyle = 'color: #999;';
+                } else if (!family.location) {
+                    locationInfo = '位置情報がありません';
+                    locationStyle = 'color: #ff9800;';
+                } else {
+                    const loc = family.location;
+                    const timeAgo = getTimeAgo(new Date(loc.timestamp));
+                    locationInfo = `${loc.address || `${loc.latitude.toFixed(4)}, ${loc.longitude.toFixed(4)}`} (${timeAgo})`;
+                    
+                    if (loc.location_type === 'emergency') {
+                        locationStyle = 'color: #f44336; font-weight: bold;';
+                        locationInfo = `🚨 緊急: ${locationInfo}`;
+                    } else {
+                        locationStyle = 'color: #4caf50;';
+                    }
+                }
+                
+                return `
+                    <div style="background: white; padding: 10px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #ddd;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                            <div>
+                                <strong>${family.nickname || family.parent_name}</strong>
+                                <div style="font-size: 12px; color: #666;">
+                                    ${family.relationship_type || 'parent'}
+                                </div>
+                            </div>
+                            ${hasLocation && family.location ? `
+                                <button onclick="showLocationOnMap('${family.parent_id}', ${family.location.latitude}, ${family.location.longitude})" 
+                                        style="padding: 5px 10px; background: #2196f3; color: white; border: none; border-radius: 5px; font-size: 12px;">
+                                    地図で見る
+                                </button>
+                            ` : ''}
+                        </div>
+                        <div style="font-size: 13px; ${locationStyle}">
+                            📍 ${locationInfo}
+                        </div>
+                        ${hasLocation && family.location && family.location.accuracy ? `
+                            <div style="font-size: 11px; color: #999; margin-top: 3px;">
+                                精度: ±${Math.round(family.location.accuracy)}m
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 時間差を計算
+        function getTimeAgo(timestamp) {
+            const now = new Date();
+            const diff = now - timestamp;
+            const minutes = Math.floor(diff / (1000 * 60));
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+            if (minutes < 1) return '今';
+            if (minutes < 60) return `${minutes}分前`;
+            if (hours < 24) return `${hours}時間前`;
+            return `${days}日前`;
+        }
+
+        // 地図で位置を表示
+        function showLocationOnMap(parentId, latitude, longitude) {
+            const mapUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
+            window.open(mapUrl, '_blank');
+            addLog(`🗺️ ${parentId}の位置を地図で表示しました`, 'info');
+        }
+
+        // 家族の位置情報を更新
+        async function refreshFamilyLocations() {
+            await loadFamilyLocations();
+        }
+
+        async function sendEmergencyCheck() {
+            try {
+                addLog('🚨 緊急確認を送信中...', 'info');
+                
+                const response = await fetch(`${API_BASE}/api/multi-parent/emergency-check`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        message: '緊急確認: 至急連絡をお願いします',
+                        all_parents: true
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    addLog('✅ すべての親に緊急確認を送信しました', 'success');
+                } else {
+                    addLog(`❌ 緊急確認送信エラー: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                addLog(`❌ 緊急確認送信失敗: ${error.message}`, 'error');
+            }
+        }
+
+        async function refreshStatus() {
+            addLog('🔄 状況を更新中...', 'info');
+            await loadParentsStatus();
+        }
+
+        function logout() {
+            localStorage.removeItem('childAuthToken');
+            authToken = null;
+            userInfo = null;
+            parentsData = [];
+            
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('mainSection').style.display = 'none';
+            
+            addLog('👋 ログアウトしました', 'info');
+        }
+
+        function addLog(message, type = 'info') {
+            const logArea = document.getElementById('logArea');
+            const timestamp = new Date().toLocaleTimeString('ja-JP');
+            const logEntry = document.createElement('div');
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            
+            if (type === 'error') logEntry.style.color = '#dc3545';
+            if (type === 'success') logEntry.style.color = '#28a745';
+            if (type === 'info') logEntry.style.color = '#17a2b8';
+            
+            logArea.appendChild(logEntry);
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        // プッシュ通知のセットアップ
+        async function setupNotifications() {
+            if (!authToken) {
+                addLog('❌ ログインが必要です', 'error');
+                return;
+            }
+
+            try {
+                addLog('🔄 プッシュ通知を設定中...', 'info');
+                
+                // Service Worker を登録
+                const swRegistered = await pushNotificationManager.registerServiceWorker();
+                if (!swRegistered) {
+                    addLog('❌ Service Worker の登録に失敗しました', 'error');
+                    return;
+                }
+
+                // 通知権限を要求
+                const permissionGranted = await pushNotificationManager.requestPermission();
+                if (!permissionGranted) {
+                    addLog('❌ 通知権限が拒否されました', 'error');
+                    return;
+                }
+
+                // プッシュ通知を購読
+                const subscribed = await pushNotificationManager.subscribeToPush(authToken);
+                if (subscribed) {
+                    addLog('✅ プッシュ通知が有効になりました', 'success');
+                    
+                    // テスト通知を送信
+                    setTimeout(async () => {
+                        const result = await pushNotificationManager.sendTestNotification(
+                            authToken,
+                            'テスト通知',
+                            'プッシュ通知が正常に動作しています'
+                        );
+                        if (result) {
+                            addLog('📨 テスト通知を送信しました', 'info');
+                        }
+                    }, 2000);
+                } else {
+                    addLog('❌ プッシュ通知の購読に失敗しました', 'error');
+                }
+            } catch (error) {
+                addLog(`❌ 通知設定エラー: ${error.message}`, 'error');
+            }
+        }
+
+        // 定期的な状況更新（30秒間隔）
+        setInterval(() => {
+            if (authToken && userInfo) {
+                loadParentsStatus();
+            }
+        }, 30000);
+
+        // PWA関連の初期化
+        window.addEventListener('load', () => {
+            // Service Worker の登録
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(registration => {
+                        console.log('Service Worker 登録成功:', registration);
+                    })
+                    .catch(error => {
+                        console.log('Service Worker 登録失敗:', error);
+                    });
+            }
+
+            // オンライン/オフライン状態の監視
+            window.addEventListener('online', () => {
+                addLog('🌐 オンラインに復帰しました', 'success');
+                if (authToken && userInfo) {
+                    loadParentsStatus(); // 復帰時に状況を更新
+                }
+            });
+
+            window.addEventListener('offline', () => {
+                addLog('📵 オフラインモードです', 'info');
+            });
+
+            // PWAとして実行されているかチェック
+            if (window.matchMedia('(display-mode: standalone)').matches) {
+                console.log('PWAモードで実行中');
+                addLog('📱 アプリモードで実行中', 'info');
+            }
+        });
+    </script>
+</body>
+</html>

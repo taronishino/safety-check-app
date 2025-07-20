@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>設定 - 安否チェックアプリ</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.9);
+            border: none;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .back-btn:hover {
+            background: white;
+            transform: scale(1.1);
+        }
+        .setting-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #4ECDC4;
+        }
+        .setting-item {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .setting-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .setting-title {
+            font-weight: bold;
+            color: #333;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .setting-description {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.5;
+        }
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+            background: #ccc;
+            border-radius: 13px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .toggle-switch.active {
+            background: #4ECDC4;
+        }
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+        .toggle-switch.active::after {
+            transform: translateX(24px);
+        }
+        .plan-info {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .plan-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+            background: #4ECDC4;
+            color: white;
+        }
+        .save-btn {
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            background: #4ECDC4;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+        .save-btn:hover {
+            background: #44A08D;
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+        .upgrade-notice {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            color: #856404;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <button class="back-btn" onclick="goBack()">⬅️</button>
+    
+    <div class="container">
+        <h1>⚙️ 設定</h1>
+        
+        <div class="plan-info" id="planInfo">
+            <div id="planStatus">プラン情報を読み込み中...</div>
+            <button id="downgradeBtn" class="save-btn" onclick="downgradePlan()" 
+                    style="background: #6c757d; margin-top: 15px; display: none;">
+                無料プランに変更
+            </button>
+        </div>
+
+        <!-- プレミアム機能設定 -->
+        <div class="setting-section" id="premiumSettings" style="display: none;">
+            <h3 style="color: #4ECDC4; margin-bottom: 15px;">プレミアム機能設定</h3>
+            
+            <div class="setting-item">
+                <div class="setting-header">
+                    <div class="setting-title">
+                        <span>📍</span>
+                        <span>位置情報共有</span>
+                    </div>
+                    <div class="toggle-switch" id="locationToggle" onclick="toggleSetting('location')"></div>
+                </div>
+                <div class="setting-description">
+                    親アプリで現在位置を共有し、家族が位置情報を確認できるようにします。
+                    バッテリー消費を考慮して、必要な時のみ有効にすることをお勧めします。
+                </div>
+            </div>
+            
+            <div class="setting-item">
+                <div class="setting-header">
+                    <div class="setting-title">
+                        <span>📡</span>
+                        <span>手動安否報告</span>
+                    </div>
+                    <div class="toggle-switch" id="manualReportToggle" onclick="toggleSetting('manualReport')"></div>
+                </div>
+                <div class="setting-description">
+                    親が手動で安否報告ボタンを押せるようにします。
+                    自動検知に加えて、より確実な安否確認が可能になります。
+                </div>
+            </div>
+            
+            <div class="setting-item">
+                <div class="setting-header">
+                    <div class="setting-title">
+                        <span>🚨</span>
+                        <span>緊急確認機能</span>
+                    </div>
+                    <div class="toggle-switch" id="emergencyToggle" onclick="toggleSetting('emergency')"></div>
+                </div>
+                <div class="setting-description">
+                    個別の親に対して緊急確認通知を送信できるようにします。
+                    緊急時の迅速な安否確認に役立ちます。
+                </div>
+            </div>
+        </div>
+
+        <!-- 無料プラン向けアップグレード案内 -->
+        <div class="upgrade-notice" id="upgradeNotice" style="display: none;">
+            <h4 style="margin-bottom: 10px;">💎 プレミアム機能を利用するには</h4>
+            <p style="font-size: 14px; margin-bottom: 15px;">
+                位置情報共有、手動安否報告、緊急確認機能は<br>
+                プレミアムプランでご利用いただけます。
+            </p>
+            <button class="save-btn" onclick="goToChildApp()">
+                アップグレードする
+            </button>
+        </div>
+
+        <button class="save-btn" id="saveBtn" onclick="saveSettings()" style="display: none;">
+            設定を保存
+        </button>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        let authToken = localStorage.getItem('childAuthToken');
+        let settings = {
+            location: false,
+            manualReport: false,
+            emergency: false
+        };
+        let isPremium = false;
+
+        // 初期化
+        window.onload = async function() {
+            if (!authToken) {
+                alert('ログインが必要です');
+                window.location.href = 'child.html';
+                return;
+            }
+            await loadSettings();
+        };
+
+        // 設定を読み込み
+        async function loadSettings() {
+            try {
+                // プラン状況を確認
+                const response = await fetch(`${API_BASE}/api/subscription/status`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const subscription = data.subscription;
+                    const features = data.available_features;
+                    
+                    isPremium = subscription.plan_type === 'premium' || subscription.is_trial_active;
+                    
+                    // プラン情報を表示
+                    const planStatus = document.getElementById('planStatus');
+                    const downgradeBtn = document.getElementById('downgradeBtn');
+                    
+                    if (isPremium) {
+                        let planText = subscription.is_trial_active ? 
+                            `<span class="plan-badge">プレミアム体験中 (${subscription.trial_days_left}日残り)</span>` :
+                            '<span class="plan-badge">プレミアムプラン</span>';
+                        planStatus.innerHTML = planText;
+                        
+                        // プレミアム設定を表示
+                        document.getElementById('premiumSettings').style.display = 'block';
+                        document.getElementById('saveBtn').style.display = 'block';
+                        document.getElementById('upgradeNotice').style.display = 'none';
+                        downgradeBtn.style.display = 'block';
+                        
+                        // 各機能の状態を設定
+                        settings.location = features.find(f => f.feature_name === 'location_sharing')?.is_enabled || false;
+                        settings.manualReport = features.find(f => f.feature_name === 'manual_safety_report')?.is_enabled || false;
+                        settings.emergency = features.find(f => f.feature_name === 'emergency_check')?.is_enabled || false;
+                        
+                        // トグルスイッチの状態を更新
+                        updateToggleUI();
+                        
+                        // ローカルストレージから以前の設定を読み込み
+                        const savedSettings = localStorage.getItem('premiumSettings');
+                        if (savedSettings) {
+                            const parsed = JSON.parse(savedSettings);
+                            settings = { ...settings, ...parsed };
+                            updateToggleUI();
+                        }
+                    } else {
+                        planStatus.innerHTML = '<span class="plan-badge" style="background: #ffc107;">無料プラン</span>';
+                        document.getElementById('premiumSettings').style.display = 'none';
+                        document.getElementById('saveBtn').style.display = 'none';
+                        document.getElementById('upgradeNotice').style.display = 'block';
+                        downgradeBtn.style.display = 'none';
+                    }
+                } else {
+                    throw new Error('プラン情報の取得に失敗しました');
+                }
+            } catch (error) {
+                console.error('設定読み込みエラー:', error);
+                alert('設定の読み込みに失敗しました');
+            }
+        }
+
+        // トグルスイッチの切り替え
+        function toggleSetting(type) {
+            settings[type] = !settings[type];
+            updateToggleUI();
+        }
+
+        // トグルUIの更新
+        function updateToggleUI() {
+            document.getElementById('locationToggle').className = 
+                settings.location ? 'toggle-switch active' : 'toggle-switch';
+            document.getElementById('manualReportToggle').className = 
+                settings.manualReport ? 'toggle-switch active' : 'toggle-switch';
+            document.getElementById('emergencyToggle').className = 
+                settings.emergency ? 'toggle-switch active' : 'toggle-switch';
+        }
+
+        // 設定を保存
+        async function saveSettings() {
+            try {
+                // ローカルストレージに保存
+                localStorage.setItem('premiumSettings', JSON.stringify(settings));
+                
+                // TODO: サーバーに設定を保存するAPIを実装
+                // 現在はローカルストレージのみ
+                
+                alert('設定を保存しました');
+                goBack();
+            } catch (error) {
+                console.error('設定保存エラー:', error);
+                alert('設定の保存に失敗しました');
+            }
+        }
+
+        // 戻る
+        function goBack() {
+            window.location.href = 'child.html';
+        }
+
+        // 子アプリに戻ってアップグレード
+        function goToChildApp() {
+            window.location.href = 'child.html';
+        }
+
+        // プランダウングレード
+        async function downgradePlan() {
+            if (!confirm('無料プランに変更しますか？\\n位置情報、緊急確認、手動報告などの機能が利用できなくなります。')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/subscription/upgrade`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ plan_type: 'basic' })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert('無料プランに変更されました。\\n位置情報、緊急確認、手動報告機能が制限されます。');
+                    window.location.href = 'child.html'; // メイン画面に戻る
+                } else {
+                    alert(`プラン変更エラー: ${data.error}`);
+                }
+            } catch (error) {
+                alert(`プラン変更失敗: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html>

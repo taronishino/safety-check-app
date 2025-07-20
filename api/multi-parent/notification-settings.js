@@ -21,6 +21,13 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // location取得のためのクエリパラメータをチェック
+  const { parent_id } = req.query;
+  if (parent_id) {
+    // 位置情報取得モード
+    return handleLocationRequest(req, res);
+  }
+
   try {
     // JWT認証
     const authHeader = req.headers.authorization;
@@ -63,6 +70,60 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Multi-parent notification settings error:', error);
+    
+    // JWTエラーの場合は401を返す
+    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+// 位置情報取得処理
+async function handleLocationRequest(req, res) {
+  try {
+    // JWT認証
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'No valid authorization header' });
+    }
+
+    const token = authHeader.substring(7);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const childId = decoded.userId;
+
+    const { parent_id } = req.query;
+
+    // 権限チェック - 親子関係が存在するか確認
+    const { data: relationship, error: relError } = await supabase
+      .from('relationships')
+      .select('*')
+      .eq('parent_id', parent_id)
+      .eq('child_id', childId)
+      .single();
+
+    if (relError || !relationship) {
+      return res.status(403).json({ error: 'No relationship found' });
+    }
+
+    // 最新の位置情報を取得（実際の実装では位置情報テーブルから取得）
+    // ここではダミーデータを返す
+    const locationData = {
+      latitude: 35.6812 + (Math.random() - 0.5) * 0.01, // 東京駅周辺のランダムな位置
+      longitude: 139.7671 + (Math.random() - 0.5) * 0.01,
+      address: '東京都千代田区丸の内1-9-1',
+      last_updated: new Date().toISOString(),
+      accuracy: 10 // メートル
+    };
+
+    res.status(200).json({
+      success: true,
+      location: locationData
+    });
+
+  } catch (error) {
+    console.error('Location fetch error:', error);
     
     // JWTエラーの場合は401を返す
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {

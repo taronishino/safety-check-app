@@ -431,9 +431,7 @@
                 if (response.ok) {
                     const data = await response.json();
                     const features = data.available_features;
-                    const canUseSafetyReport = features.find(f => 
-                        f.feature_name === 'manual_safety_report'
-                    )?.is_enabled;
+                    const canUseSafetyReport = features.manual_reports;
 
                     const reportBtn = document.getElementById('safetyReportBtn');
                     const upgradePrompt = document.getElementById('upgradePrompt');

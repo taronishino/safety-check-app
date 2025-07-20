@@ -464,6 +464,8 @@
         async function showPairingCode() {
             try {
                 addLog('🔄 ペアリングコードを生成中...', 'info');
+                console.log('Pairing API URL:', `${API_BASE}/api/pairing/generate-code`);
+                console.log('Auth Token:', authToken);
                 
                 const response = await fetch(`${API_BASE}/api/pairing/generate-code`, {
                     method: 'POST',
@@ -473,12 +475,15 @@
                     }
                 });
 
+                console.log('Pairing response status:', response.status);
+                const data = await response.json();
+                console.log('Pairing response data:', data);
+
                 if (response.ok) {
-                    const data = await response.json();
                     
                     // ペアリングコードセクションを表示
                     document.getElementById('pairingCodeSection').style.display = 'block';
-                    document.getElementById('pairingCode').textContent = data.pairing_code;
+                    document.getElementById('pairingCode').textContent = data.code;
                     
                     addLog('✅ ペアリングコードを生成しました', 'success');
                     

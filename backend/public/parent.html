@@ -148,6 +148,11 @@
             opacity: 0.6;
             color: #999;
         }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
     </style>
 </head>
 <body>
@@ -175,11 +180,24 @@
             <div class="user-info" id="userInfo"></div>
             
             
+            <!-- 緊急確認通知エリア -->
+            <div id="emergencyNotification" style="display: none; background: #ffebee; border: 2px solid #f44336; border-radius: 10px; padding: 20px; margin-bottom: 20px; text-align: center; animation: pulse 2s infinite;">
+                <div style="font-size: 24px; margin-bottom: 10px;">🚨</div>
+                <div style="font-size: 18px; font-weight: bold; color: #d32f2f; margin-bottom: 10px;">
+                    緊急確認依頼
+                </div>
+                <div id="emergencyRequester" style="font-size: 16px; color: #666; margin-bottom: 15px;">
+                    お子様から安否確認の依頼が届いています
+                </div>
+                <button onclick="respondToEmergency()" style="background: #f44336; color: white; padding: 15px 30px; font-size: 18px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                    📡 安否報告する
+                </button>
+            </div>
+
             <div class="status-card">
                 <h3>📱 最後のスマホ操作</h3>
                 <div id="lastActivity" style="font-size: 18px; text-align: center; color: #333; margin: 15px 0;">📅 取得中...</div>
             </div>
-
 
             <button class="btn btn-success" onclick="sendActivity()" id="safetyReportBtn" style="display: none;">
                 📡 安否報告 <span style="font-size: 12px; background: #ffd700; color: #000; padding: 2px 6px; border-radius: 4px; margin-left: 5px;">💎 プレミアムのみ</span>
@@ -356,6 +374,7 @@
             
             updateLastActivity();
             checkSafetyReportAccess();
+            checkEmergencyRequests(); // 緊急確認チェックを追加
             addLog('✅ ログイン完了', 'success');
         }
 
@@ -491,6 +510,78 @@
             document.getElementById('pairingCodeSection').style.display = 'none';
             addLog('ℹ️ ペアリングコードを閉じました', 'info');
         }
+
+        // 緊急確認依頼をチェック
+        async function checkEmergencyRequests() {
+            try {
+                const response = await fetch(`${API_BASE}/api/emergency/status`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.has_pending_requests) {
+                        showEmergencyNotification(data.requester_name || 'お子様');
+                    } else {
+                        hideEmergencyNotification();
+                    }
+                } else {
+                    console.log('緊急確認状態の取得に失敗:', response.status);
+                }
+            } catch (error) {
+                console.log('緊急確認チェックエラー:', error);
+            }
+        }
+
+        // 緊急確認通知を表示
+        function showEmergencyNotification(requesterName) {
+            const notification = document.getElementById('emergencyNotification');
+            const requester = document.getElementById('emergencyRequester');
+            
+            requester.textContent = `${requesterName}から安否確認の依頼が届いています`;
+            notification.style.display = 'block';
+            
+            addLog(`🚨 ${requesterName}から緊急確認依頼`, 'info');
+        }
+
+        // 緊急確認通知を非表示
+        function hideEmergencyNotification() {
+            document.getElementById('emergencyNotification').style.display = 'none';
+        }
+
+        // 緊急確認に応答
+        async function respondToEmergency() {
+            try {
+                addLog('📡 緊急確認に応答中...', 'info');
+                
+                const response = await fetch(`${API_BASE}/api/emergency/respond`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        status: 'safe',
+                        message: '無事です',
+                        timestamp: new Date().toISOString()
+                    })
+                });
+
+                if (response.ok) {
+                    addLog('✅ 安否報告完了', 'success');
+                    hideEmergencyNotification();
+                    updateLastActivity();
+                } else {
+                    const data = await response.json();
+                    addLog(`❌ 応答エラー: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                addLog(`❌ 応答失敗: ${error.message}`, 'error');
+            }
+        }
+
+        // 定期的に緊急確認をチェック（30秒ごと）
+        setInterval(checkEmergencyRequests, 30000);
 
     </script>
 </body>

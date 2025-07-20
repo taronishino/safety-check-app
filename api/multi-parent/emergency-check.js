@@ -50,15 +50,34 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: 'No relationship found' });
     }
 
-    // 緊急確認通知を作成（実際のプッシュ通知実装は省略）
-    const notification = {
-      type: 'emergency_check',
-      from_child_id: childId,
-      to_parent_id: parent_id,
-      parent_name: parent_name || 'Parent',
-      message: `${decoded.email}さんから緊急確認の要請がありました`,
-      created_at: new Date().toISOString()
-    };
+    // 子供の情報を取得
+    const { data: childUser, error: childError } = await supabase
+      .from('users')
+      .select('name, email')
+      .eq('id', childId)
+      .single();
+
+    if (childError) {
+      console.error('Child user fetch error:', childError);
+    }
+
+    // 緊急確認依頼をデータベースに記録
+    const { data: emergencyRequest, error: requestError } = await supabase
+      .from('emergency_requests')
+      .insert({
+        requester_id: childId,
+        parent_id: parent_id,
+        status: 'pending',
+        message: '緊急確認をお願いします',
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (requestError) {
+      console.error('Emergency request creation error:', requestError);
+      return res.status(500).json({ error: 'Failed to create emergency request' });
+    }
 
     // アクティビティログとして記録
     const { data: activity, error: actError } = await supabase
@@ -66,7 +85,11 @@ export default async function handler(req, res) {
       .insert([{
         user_id: parent_id,
         activity_type: 'emergency_check_received',
-        metadata: notification
+        metadata: {
+          emergency_request_id: emergencyRequest.id,
+          from_child_name: childUser?.name || 'お子様',
+          message: '緊急確認の依頼が届きました'
+        }
       }]);
 
     if (actError) {
@@ -76,7 +99,8 @@ export default async function handler(req, res) {
     res.status(200).json({
       success: true,
       message: `${parent_name || 'Parent'}に緊急確認を送信しました`,
-      notification
+      emergency_request_id: emergencyRequest.id,
+      requester_name: childUser?.name || 'お子様'
     });
 
   } catch (error) {

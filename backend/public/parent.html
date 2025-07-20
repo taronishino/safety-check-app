@@ -186,13 +186,9 @@
                 <div id="lastUpdate">最終更新: --</div>
             </div>
 
-            <div class="input-group">
-                <label>バッテリー残量 (%)</label>
-                <input type="number" id="batteryLevel" value="85" min="0" max="100">
-            </div>
 
             <button class="btn btn-success" onclick="sendActivity()" id="safetyReportBtn" style="display: none;">
-                📡 安否報告
+                📡 安否報告 <span style="font-size: 12px; background: #ffd700; color: #000; padding: 2px 6px; border-radius: 4px; margin-left: 5px;">💎 プレミアムのみ</span>
             </button>
             
             <div id="upgradePrompt" style="display: none; background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 10px; text-align: center;">
@@ -240,6 +236,36 @@
         // 初期化
         if (authToken) {
             checkAuth();
+            updateBatteryDisplay();
+        }
+
+        // バッテリー残量の自動取得と更新
+        async function updateBatteryDisplay() {
+            try {
+                if ('getBattery' in navigator) {
+                    const battery = await navigator.getBattery();
+                    const batteryLevel = Math.round(battery.level * 100);
+                    const isCharging = battery.charging;
+                    
+                    const batteryDisplay = document.getElementById('batteryDisplay');
+                    const chargingIcon = isCharging ? '⚡' : '🔋';
+                    batteryDisplay.textContent = `${chargingIcon} ${batteryLevel}%`;
+                    
+                    // バッテリー状態の変更を監視
+                    battery.addEventListener('levelchange', updateBatteryDisplay);
+                    battery.addEventListener('chargingchange', updateBatteryDisplay);
+                    
+                    return batteryLevel;
+                } else {
+                    // Battery API が利用できない場合
+                    document.getElementById('batteryDisplay').textContent = '🔋 取得不可';
+                    return 100; // デフォルト値
+                }
+            } catch (error) {
+                console.log('Battery API not supported:', error);
+                document.getElementById('batteryDisplay').textContent = '🔋 取得不可';
+                return 100; // デフォルト値
+            }
         }
 
         async function register() {
@@ -349,12 +375,18 @@
         }
 
         async function sendActivity() {
-            const batteryLevel = parseInt(document.getElementById('batteryLevel').value);
-            
-            if (isNaN(batteryLevel) || batteryLevel < 0 || batteryLevel > 100) {
-                addLog('❌ バッテリー残量は0-100の数値で入力してください', 'error');
-                return;
+            // 実際のバッテリー残量を取得
+            let batteryLevel = 100; // デフォルト値
+            try {
+                if ('getBattery' in navigator) {
+                    const battery = await navigator.getBattery();
+                    batteryLevel = Math.round(battery.level * 100);
+                }
+            } catch (error) {
+                console.log('Battery API not available:', error);
             }
+            
+            addLog(`🔋 現在のバッテリー残量: ${batteryLevel}%`, 'info');
 
             try {
                 addLog('🔄 安否情報送信中...', 'info');
@@ -376,7 +408,6 @@
 
                 if (response.ok) {
                     addLog('✅ 安否情報送信完了', 'success');
-                    updateBatteryDisplay();
                 } else {
                     addLog(`❌ 送信エラー: ${data.error}`, 'error');
                 }
@@ -385,16 +416,6 @@
             }
         }
 
-        function updateBatteryDisplay() {
-            const batteryLevel = document.getElementById('batteryLevel').value;
-            const batteryEmoji = batteryLevel > 50 ? '🔋' : batteryLevel > 20 ? '🪫' : '🔴';
-            
-            document.getElementById('batteryDisplay').textContent = 
-                `${batteryEmoji} ${batteryLevel}%`;
-            
-            document.getElementById('lastUpdate').textContent = 
-                `最終更新: ${new Date().toLocaleString('ja-JP')}`;
-        }
 
         function logout() {
             localStorage.removeItem('parentAuthToken');
@@ -431,22 +452,15 @@
                 if (response.ok) {
                     const data = await response.json();
                     const features = data.available_features;
-                    const canUseSafetyReport = features.find(f => 
-                        f.feature_name === 'manual_safety_report'
-                    )?.is_enabled;
+                    const canUseSafetyReport = features.manual_reports;
 
                     const reportBtn = document.getElementById('safetyReportBtn');
                     const upgradePrompt = document.getElementById('upgradePrompt');
 
-                    if (canUseSafetyReport) {
-                        reportBtn.style.display = 'block';
-                        upgradePrompt.style.display = 'none';
-                        addLog('✅ 手動安否報告が利用可能です', 'success');
-                    } else {
-                        reportBtn.style.display = 'none';
-                        upgradePrompt.style.display = 'block';
-                        addLog('ℹ️ 手動安否報告はプレミアム機能です', 'info');
-                    }
+                    // 親側では手動安否報告を常に表示（子供側でプレミアム制御）
+                    reportBtn.style.display = 'block';
+                    upgradePrompt.style.display = 'none';
+                    addLog('✅ 手動安否報告が利用可能です', 'success');
                 } else {
                     // デフォルトで無料プランとして扱う
                     document.getElementById('safetyReportBtn').style.display = 'none';
@@ -464,6 +478,8 @@
         async function showPairingCode() {
             try {
                 addLog('🔄 ペアリングコードを生成中...', 'info');
+                console.log('Pairing API URL:', `${API_BASE}/api/pairing/generate-code`);
+                console.log('Auth Token:', authToken);
                 
                 const response = await fetch(`${API_BASE}/api/pairing/generate-code`, {
                     method: 'POST',
@@ -473,12 +489,15 @@
                     }
                 });
 
+                console.log('Pairing response status:', response.status);
+                const data = await response.json();
+                console.log('Pairing response data:', data);
+
                 if (response.ok) {
-                    const data = await response.json();
                     
                     // ペアリングコードセクションを表示
                     document.getElementById('pairingCodeSection').style.display = 'block';
-                    document.getElementById('pairingCode').textContent = data.pairing_code;
+                    document.getElementById('pairingCode').textContent = data.code;
                     
                     addLog('✅ ペアリングコードを生成しました', 'success');
                     
@@ -501,8 +520,6 @@
             addLog('ℹ️ ペアリングコードを閉じました', 'info');
         }
 
-        // バッテリー残量の変更時に表示を更新
-        document.getElementById('batteryLevel').addEventListener('input', updateBatteryDisplay);
     </script>
 </body>
 </html>

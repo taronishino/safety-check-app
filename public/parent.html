@@ -376,7 +376,15 @@
 
         async function sendActivity() {
             // 実際のバッテリー残量を取得
-            const batteryLevel = await updateBatteryDisplay();
+            let batteryLevel = 100; // デフォルト値
+            try {
+                if ('getBattery' in navigator) {
+                    const battery = await navigator.getBattery();
+                    batteryLevel = Math.round(battery.level * 100);
+                }
+            } catch (error) {
+                console.log('Battery API not available:', error);
+            }
             
             addLog(`🔋 現在のバッテリー残量: ${batteryLevel}%`, 'info');
 
@@ -400,7 +408,6 @@
 
                 if (response.ok) {
                     addLog('✅ 安否情報送信完了', 'success');
-                    updateBatteryDisplay();
                 } else {
                     addLog(`❌ 送信エラー: ${data.error}`, 'error');
                 }
@@ -409,16 +416,6 @@
             }
         }
 
-        function updateBatteryDisplay() {
-            const batteryLevel = document.getElementById('batteryLevel').value;
-            const batteryEmoji = batteryLevel > 50 ? '🔋' : batteryLevel > 20 ? '🪫' : '🔴';
-            
-            document.getElementById('batteryDisplay').textContent = 
-                `${batteryEmoji} ${batteryLevel}%`;
-            
-            document.getElementById('lastUpdate').textContent = 
-                `最終更新: ${new Date().toLocaleString('ja-JP')}`;
-        }
 
         function logout() {
             localStorage.removeItem('parentAuthToken');
@@ -523,8 +520,6 @@
             addLog('ℹ️ ペアリングコードを閉じました', 'info');
         }
 
-        // バッテリー残量の変更時に表示を更新
-        document.getElementById('batteryLevel').addEventListener('input', updateBatteryDisplay);
     </script>
 </body>
 </html>

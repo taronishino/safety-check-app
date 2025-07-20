@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>安否チェックアプリ</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        .role-selection {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .role-btn {
+            padding: 20px;
+            font-size: 18px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: white;
+            display: block;
+        }
+        .parent-btn {
+            background: linear-gradient(45deg, #FF6B6B, #FF8E8E);
+        }
+        .child-btn {
+            background: linear-gradient(45deg, #4ECDC4, #44A08D);
+        }
+        .role-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .plan-selection {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+        .plan-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .plan-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+        .plan-card.selected {
+            border-color: #667eea;
+            background: #f0f8ff;
+        }
+        .plan-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .plan-features {
+            font-size: 12px;
+            color: #666;
+            margin: 5px 0;
+        }
+        .plan-price {
+            font-weight: bold;
+            color: #667eea;
+            margin-top: 10px;
+        }
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            background: #5a6fd8;
+            transform: translateY(-1px);
+        }
+        .btn-secondary {
+            background: #6c757d;
+        }
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛡️ 安否チェック</h1>
+        <p class="subtitle">家族安否確認アプリ</p>
+        
+        <div class="role-selection" id="roleSelection">
+            <a href="parent.html" class="role-btn parent-btn">
+                👴👵 親として利用
+                <div style="font-size: 14px; margin-top: 5px; opacity: 0.9;">
+                    安否情報を報告する
+                </div>
+            </a>
+            
+            <a href="child.html" class="role-btn child-btn" onclick="console.log('子ボタンクリック'); showPlanSelection('child'); return false;">
+                👨👩 子として利用
+                <div style="font-size: 14px; margin-top: 5px; opacity: 0.9;">
+                    親の安全を確認する
+                </div>
+            </a>
+        </div>
+
+        <!-- プラン選択セクション -->
+        <div class="plan-selection" id="planSelection">
+            <h3>💎 プランを選択</h3>
+            <p style="font-size: 14px; color: #666; margin-bottom: 20px;">
+                ご利用になる機能に応じてプランをお選びください
+            </p>
+            
+            <div class="plan-card" onclick="selectPlan('basic')" id="basicPlan">
+                <div class="plan-title">🆓 無料プラン</div>
+                <div class="plan-features">✅ 1人の親監視</div>
+                <div class="plan-features">✅ 基本的な活動検知</div>
+                <div class="plan-features">✅ 基本通知機能</div>
+                <div class="plan-features">❌ 位置情報共有</div>
+                <div class="plan-features">❌ 複数親監視</div>
+                <div class="plan-features">❌ 手動安否報告</div>
+                <div class="plan-price">無料</div>
+            </div>
+
+            <div class="plan-card" onclick="selectPlan('premium')" id="premiumPlan">
+                <div class="plan-title">💎 プレミアムプラン</div>
+                <div class="plan-features">✅ 全機能利用可能</div>
+                <div class="plan-features">✅ 位置情報共有・確認</div>
+                <div class="plan-features">✅ 緊急位置情報</div>
+                <div class="plan-features">✅ 複数親監視</div>
+                <div class="plan-features">✅ 手動安否報告</div>
+                <div class="plan-features">✅ 詳細分析</div>
+                <div class="plan-price">7日間無料体験 → 月額980円</div>
+            </div>
+
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn" onclick="confirmPlan()" id="confirmBtn" disabled>
+                    プランを確定してアプリを開始
+                </button>
+                <button class="btn btn-secondary" onclick="goBack()">
+                    戻る
+                </button>
+            </div>
+            
+            <div style="text-align: center; margin-top: 15px;">
+                <button class="btn btn-secondary" onclick="skipPlanSelection()" style="font-size: 12px; padding: 8px 16px;">
+                    後でプランを選択
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedRole = '';
+        let selectedPlan = '';
+
+        // プラン選択セクションの表示制御
+        function showPlanSelection(role) {
+            console.log('showPlanSelection called with role:', role);
+            selectedRole = role;
+            const roleSelection = document.getElementById('roleSelection');
+            const planSelection = document.getElementById('planSelection');
+            
+            console.log('roleSelection element:', roleSelection);
+            console.log('planSelection element:', planSelection);
+            
+            if (roleSelection && planSelection) {
+                roleSelection.style.display = 'none';
+                planSelection.style.display = 'block';
+                console.log('プラン選択画面を表示しました');
+            } else {
+                console.error('要素が見つかりません');
+            }
+        }
+
+        function goBack() {
+            document.getElementById('roleSelection').style.display = 'block';
+            document.getElementById('planSelection').style.display = 'none';
+            selectedRole = '';
+            selectedPlan = '';
+            
+            // プラン選択をリセット
+            document.getElementById('basicPlan').classList.remove('selected');
+            document.getElementById('premiumPlan').classList.remove('selected');
+            document.getElementById('confirmBtn').disabled = true;
+        }
+
+        // プラン選択関数
+        function selectPlan(plan) {
+            selectedPlan = plan;
+            
+            // 選択状態をリセット
+            document.getElementById('basicPlan').classList.remove('selected');
+            document.getElementById('premiumPlan').classList.remove('selected');
+            
+            // 選択されたプランをハイライト
+            document.getElementById(plan + 'Plan').classList.add('selected');
+            
+            // 確定ボタンを有効化
+            document.getElementById('confirmBtn').disabled = false;
+        }
+
+        // プラン確定
+        function confirmPlan() {
+            if (!selectedPlan || !selectedRole) {
+                alert('プランと役割を選択してください');
+                return;
+            }
+
+            // プラン選択を保存
+            localStorage.setItem('selectedPlan', selectedPlan);
+            localStorage.setItem('userRole', selectedRole);
+
+            if (selectedPlan === 'premium') {
+                alert('7日間の無料体験を開始します！プレミアム機能をお試しください。');
+            } else {
+                alert('無料プランを選択しました。いつでもアップグレードできます。');
+            }
+
+            // 適切なページにリダイレクト
+            if (selectedRole === 'parent') {
+                window.location.href = 'parent.html';
+            } else {
+                window.location.href = 'child.html';
+            }
+        }
+
+        // プラン選択を後で行う
+        function skipPlanSelection() {
+            if (!selectedRole) {
+                alert('まず役割を選択してください');
+                return;
+            }
+
+            localStorage.setItem('selectedPlan', 'basic');
+            localStorage.setItem('userRole', selectedRole);
+
+            // 適切なページにリダイレクト
+            if (selectedRole === 'parent') {
+                window.location.href = 'parent.html';
+            } else {
+                window.location.href = 'child.html';
+            }
+        }
+    </script>
+</body>
+</html>

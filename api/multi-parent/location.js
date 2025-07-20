@@ -1,4 +1,4 @@
-// Vercel Serverless Function - 複数親通知設定 API
+// Vercel Serverless Function - 位置情報取得 API
 import { createClient } from '@supabase/supabase-js';
 import jwt from 'jsonwebtoken';
 
@@ -30,39 +30,43 @@ export default async function handler(req, res) {
 
     const token = authHeader.substring(7);
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const userId = decoded.userId;
+    const childId = decoded.userId;
 
-    // 親子関係とアクティビティ情報を取得
-    const { data: relationships, error } = await supabase
-      .from('relationships')
-      .select(`
-        *,
-        parent:parent_id(id, name, email)
-      `)
-      .eq('child_id', userId);
+    const { parent_id } = req.query;
 
-    if (error) {
-      console.error('Relationships fetch error:', error);
-      return res.status(200).json({ parents: [] });
+    if (!parent_id) {
+      return res.status(400).json({ error: 'Parent ID is required' });
     }
 
-    // 親の情報を整形
-    const parentsData = relationships.map(rel => ({
-      id: rel.parent_id,
-      name: rel.nickname || rel.parent?.name || 'Unknown',
-      email: rel.parent?.email || '',
-      nickname: rel.nickname,
-      last_activity: new Date().toISOString(), // ダミーデータ
-      status: 'active', // ダミーデータ
-      location: null // 位置情報はまだ実装していない
-    }));
+    // 権限チェック - 親子関係が存在するか確認
+    const { data: relationship, error: relError } = await supabase
+      .from('relationships')
+      .select('*')
+      .eq('parent_id', parent_id)
+      .eq('child_id', childId)
+      .single();
+
+    if (relError || !relationship) {
+      return res.status(403).json({ error: 'No relationship found' });
+    }
+
+    // 最新の位置情報を取得（実際の実装では位置情報テーブルから取得）
+    // ここではダミーデータを返す
+    const locationData = {
+      latitude: 35.6812 + (Math.random() - 0.5) * 0.01, // 東京駅周辺のランダムな位置
+      longitude: 139.7671 + (Math.random() - 0.5) * 0.01,
+      address: '東京都千代田区丸の内1-9-1',
+      last_updated: new Date().toISOString(),
+      accuracy: 10 // メートル
+    };
 
     res.status(200).json({
-      parents: parentsData
+      success: true,
+      location: locationData
     });
 
   } catch (error) {
-    console.error('Multi-parent notification settings error:', error);
+    console.error('Location fetch error:', error);
     
     // JWTエラーの場合は401を返す
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {

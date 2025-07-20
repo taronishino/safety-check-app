@@ -686,7 +686,7 @@
                 addLog(`📍 ${parentName}の位置情報を確認中...`, 'info');
                 
                 // 実際の位置情報取得API（今回はモック）
-                const response = await fetch(`${API_BASE}/api/location/get/${parentId}`, {
+                const response = await fetch(`${API_BASE}/api/multi-parent/location?parent_id=${parentId}`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
 
@@ -694,10 +694,11 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    lat = data.latitude;
-                    lng = data.longitude;
-                    address = data.address;
-                    updatedAt = data.updated_at;
+                    const location = data.location;
+                    lat = location.latitude;
+                    lng = location.longitude;
+                    address = location.address;
+                    updatedAt = location.last_updated;
                     addLog(`✅ ${parentName}の位置情報を取得しました`, 'success');
                 } else {
                     const errorData = await response.json();

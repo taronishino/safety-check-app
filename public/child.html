@@ -674,6 +674,8 @@
 
         // 位置確認機能
         async function checkLocation(parentId) {
+            let lat, lng, address, updatedAt;
+            
             try {
                 // 親の名前を取得
                 const parentName = parentsData.find(p => p.parent_id === parentId)?.nickname || 
@@ -689,8 +691,6 @@
                 const response = await fetch(`${API_BASE}/api/multi-parent/location?parent_id=${parentId}`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
-
-                let lat, lng, address, updatedAt;
 
                 if (response.ok) {
                     const data = await response.json();

@@ -606,15 +606,9 @@
                     const subscription = data.subscription;
                     
                     // プレミアム機能の確認
-                    const canUseEmergencyCheck = features.find(f => 
-                        f.feature_name === 'emergency_check'
-                    )?.is_enabled;
-                    const canUseLocation = features.find(f => 
-                        f.feature_name === 'location_sharing'
-                    )?.is_enabled;
-                    const canUseManualReport = features.find(f => 
-                        f.feature_name === 'manual_safety_report'
-                    )?.is_enabled;
+                    const canUseEmergencyCheck = features.emergency_checks;
+                    const canUseLocation = features.location_sharing;
+                    const canUseManualReport = features.manual_reports;
 
                     const settingsBtn = document.getElementById('settingsBtn');
 

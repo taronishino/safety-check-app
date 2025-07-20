@@ -273,21 +273,20 @@
                         document.getElementById('upgradeNotice').style.display = 'none';
                         downgradeBtn.style.display = 'block';
                         
-                        // 各機能の状態を設定
-                        settings.location = features.find(f => f.feature_name === 'location_sharing')?.is_enabled || false;
-                        settings.manualReport = features.find(f => f.feature_name === 'manual_safety_report')?.is_enabled || false;
-                        settings.emergency = features.find(f => f.feature_name === 'emergency_check')?.is_enabled || false;
-                        
-                        // トグルスイッチの状態を更新
-                        updateToggleUI();
-                        
-                        // ローカルストレージから以前の設定を読み込み
+                        // ローカルストレージから以前の設定を読み込み（優先）
                         const savedSettings = localStorage.getItem('premiumSettings');
                         if (savedSettings) {
                             const parsed = JSON.parse(savedSettings);
                             settings = { ...settings, ...parsed };
-                            updateToggleUI();
+                        } else {
+                            // 初期設定（ローカル設定がない場合のみ）
+                            settings.location = features.location_sharing || false;
+                            settings.manualReport = features.manual_reports || false;
+                            settings.emergency = features.emergency_checks || false;
                         }
+                        
+                        // トグルスイッチの状態を更新
+                        updateToggleUI();
                     } else {
                         planStatus.innerHTML = '<span class="plan-badge" style="background: #ffc107;">無料プラン</span>';
                         document.getElementById('premiumSettings').style.display = 'none';

@@ -80,11 +80,6 @@
             font-size: 16px;
             box-sizing: border-box;
         }
-        .battery-display {
-            font-size: 20px;
-            text-align: center;
-            margin: 10px 0;
-        }
         .log {
             background: #f8f9fa;
             padding: 10px;
@@ -181,9 +176,8 @@
             
             
             <div class="status-card">
-                <h3>📍 現在の安否情報</h3>
-                <div class="battery-display" id="batteryDisplay">🔋 ---%</div>
-                <div id="lastUpdate">最終更新: --</div>
+                <h3>📱 最後のスマホ操作</h3>
+                <div id="lastActivity" style="font-size: 18px; text-align: center; color: #333; margin: 15px 0;">📅 取得中...</div>
             </div>
 
 
@@ -200,13 +194,14 @@
                 </div>
             </div>
 
-            <button class="btn btn-primary" onclick="console.log('ペアリングボタンクリック'); showPairingCode()" style="background: #9c27b0; margin-bottom: 10px;">
-                🔗 ペアリングコード生成
-            </button>
-            
-            <button class="btn btn-secondary" onclick="logout()">
-                ログアウト
-            </button>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button onclick="showPairingCode()" style="flex: 1; padding: 8px 12px; font-size: 12px; background: #9c27b0; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                    🔗 ペアリング
+                </button>
+                <button onclick="logout()" style="flex: 1; padding: 8px 12px; font-size: 12px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                    ログアウト
+                </button>
+            </div>
             
             <!-- ペアリングコード表示 -->
             <div id="pairingCodeSection" style="display: none; background: #f3e5f5; padding: 20px; border-radius: 10px; margin-top: 20px; text-align: center;">
@@ -236,36 +231,26 @@
         // 初期化
         if (authToken) {
             checkAuth();
-            updateBatteryDisplay();
+            updateLastActivity();
         }
 
-        // バッテリー残量の自動取得と更新
-        async function updateBatteryDisplay() {
-            try {
-                if ('getBattery' in navigator) {
-                    const battery = await navigator.getBattery();
-                    const batteryLevel = Math.round(battery.level * 100);
-                    const isCharging = battery.charging;
-                    
-                    const batteryDisplay = document.getElementById('batteryDisplay');
-                    const chargingIcon = isCharging ? '⚡' : '🔋';
-                    batteryDisplay.textContent = `${chargingIcon} ${batteryLevel}%`;
-                    
-                    // バッテリー状態の変更を監視
-                    battery.addEventListener('levelchange', updateBatteryDisplay);
-                    battery.addEventListener('chargingchange', updateBatteryDisplay);
-                    
-                    return batteryLevel;
-                } else {
-                    // Battery API が利用できない場合
-                    document.getElementById('batteryDisplay').textContent = '🔋 取得不可';
-                    return 100; // デフォルト値
-                }
-            } catch (error) {
-                console.log('Battery API not supported:', error);
-                document.getElementById('batteryDisplay').textContent = '🔋 取得不可';
-                return 100; // デフォルト値
+        // 最後のスマホ操作時間を更新
+        function updateLastActivity() {
+            const now = new Date();
+            const timeString = now.toLocaleString('ja-JP', {
+                month: 'numeric',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            const lastActivityElement = document.getElementById('lastActivity');
+            if (lastActivityElement) {
+                lastActivityElement.textContent = `📅 ${timeString} に操作`;
             }
+            
+            // 定期的に更新（1分ごと）
+            setTimeout(updateLastActivity, 60000);
         }
 
         async function register() {
@@ -369,27 +354,14 @@
             document.getElementById('userInfo').textContent = 
                 `👤 ${userInfo.name} (${userInfo.email})`;
             
-            updateBatteryDisplay();
+            updateLastActivity();
             checkSafetyReportAccess();
             addLog('✅ ログイン完了', 'success');
         }
 
         async function sendActivity() {
-            // 実際のバッテリー残量を取得
-            let batteryLevel = 100; // デフォルト値
             try {
-                if ('getBattery' in navigator) {
-                    const battery = await navigator.getBattery();
-                    batteryLevel = Math.round(battery.level * 100);
-                }
-            } catch (error) {
-                console.log('Battery API not available:', error);
-            }
-            
-            addLog(`🔋 現在のバッテリー残量: ${batteryLevel}%`, 'info');
-
-            try {
-                addLog('🔄 安否情報送信中...', 'info');
+                addLog('📡 安否報告送信中...', 'info');
                 
                 const response = await fetch(`${API_BASE}/api/activity`, {
                     method: 'POST',
@@ -399,15 +371,15 @@
                     },
                     body: JSON.stringify({
                         last_activity_at: new Date().toISOString(),
-                        battery_level: batteryLevel,
-                        device_info: navigator.userAgent.split(' ')[0]
+                        device_info: 'parent-app'
                     })
                 });
 
                 const data = await response.json();
 
                 if (response.ok) {
-                    addLog('✅ 安否情報送信完了', 'success');
+                    addLog('✅ 安否報告完了', 'success');
+                    updateLastActivity(); // 操作時間を更新
                 } else {
                     addLog(`❌ 送信エラー: ${data.error}`, 'error');
                 }

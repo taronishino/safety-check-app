@@ -1,0 +1,28 @@
+{
+  "name": "安否チェック - 家族安否確認アプリ",
+  "short_name": "安否チェック",
+  "description": "高齢者と家族のための安否確認アプリ",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4ECDC4",
+  "orientation": "portrait",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "categories": ["health", "lifestyle", "utilities"],
+  "lang": "ja",
+  "dir": "ltr"
+}

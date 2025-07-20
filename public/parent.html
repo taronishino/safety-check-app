@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>親用 - 安否チェックアプリ</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        .status-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #FF6B6B;
+        }
+        .btn {
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+        .btn-primary {
+            background: #FF6B6B;
+            color: white;
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+        input[type="email"], input[type="password"], input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .battery-display {
+            font-size: 20px;
+            text-align: center;
+            margin: 10px 0;
+        }
+        .log {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 12px;
+            color: #666;
+        }
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.9);
+            border: none;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .user-info {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+            color: #1976d2;
+        }
+        .plan-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #FF6B6B;
+        }
+        .plan-status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-basic {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status-premium {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-trial {
+            background: #cce5ff;
+            color: #004085;
+        }
+        .feature-list {
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+        }
+        .feature-disabled {
+            opacity: 0.6;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <button class="back-btn" onclick="location.href='index.html'">🏠</button>
+    
+    <div class="container">
+        <h1>👴👵 親用 - 安否チェック</h1>
+        
+        <!-- ログイン画面 -->
+        <div id="loginSection">
+            <div class="input-group">
+                <label>メールアドレス</label>
+                <input type="email" id="email" value="test@example.com" placeholder="メールアドレス">
+            </div>
+            <div class="input-group">
+                <label>パスワード</label>
+                <input type="password" id="password" value="testpass123" placeholder="パスワード">
+            </div>
+            <button class="btn btn-primary" onclick="login()">ログイン</button>
+            <button class="btn btn-secondary" onclick="register()" style="margin-top: 10px;">新規登録</button>
+        </div>
+
+        <!-- メイン画面 -->
+        <div id="mainSection" style="display: none;">
+            <div class="user-info" id="userInfo"></div>
+            
+            
+            <div class="status-card">
+                <h3>📍 現在の安否情報</h3>
+                <div class="battery-display" id="batteryDisplay">🔋 ---%</div>
+                <div id="lastUpdate">最終更新: --</div>
+            </div>
+
+            <div class="input-group">
+                <label>バッテリー残量 (%)</label>
+                <input type="number" id="batteryLevel" value="85" min="0" max="100">
+            </div>
+
+            <button class="btn btn-success" onclick="sendActivity()" id="safetyReportBtn" style="display: none;">
+                📡 安否報告
+            </button>
+            
+            <div id="upgradePrompt" style="display: none; background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 10px; text-align: center;">
+                <div style="color: #856404; margin-bottom: 10px;">
+                    💎 手動安否報告はプレミアム機能です
+                </div>
+                <div style="font-size: 12px; color: #666;">
+                    現在は自動検知のみ利用可能です。お子様にプレミアムプランへのアップグレードを依頼してください。
+                </div>
+            </div>
+
+            <button class="btn btn-primary" onclick="console.log('ペアリングボタンクリック'); showPairingCode()" style="background: #9c27b0; margin-bottom: 10px;">
+                🔗 ペアリングコード生成
+            </button>
+            
+            <button class="btn btn-secondary" onclick="logout()">
+                ログアウト
+            </button>
+            
+            <!-- ペアリングコード表示 -->
+            <div id="pairingCodeSection" style="display: none; background: #f3e5f5; padding: 20px; border-radius: 10px; margin-top: 20px; text-align: center;">
+                <h3 style="color: #9c27b0; margin-bottom: 15px;">ペアリングコード</h3>
+                <div style="font-size: 36px; font-weight: bold; color: #6a1b9a; letter-spacing: 5px; margin: 20px 0;" id="pairingCode">------</div>
+                <div style="font-size: 14px; color: #666; margin-bottom: 15px;">
+                    このコードを子アプリで入力してください<br>
+                    有効期限: <span id="codeExpiry">5分間</span>
+                </div>
+                <button class="btn btn-secondary" onclick="hidePairingCode()" style="font-size: 14px;">
+                    閉じる
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h3>📋 ログ</h3>
+        <div class="log" id="logArea"></div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        let authToken = localStorage.getItem('parentAuthToken');
+        let userInfo = null;
+
+        // 初期化
+        if (authToken) {
+            checkAuth();
+        }
+
+        async function register() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            if (!email || !password) {
+                addLog('❌ メールアドレスとパスワードを入力してください', 'error');
+                return;
+            }
+
+            try {
+                addLog('🔄 ユーザー登録中...', 'info');
+                
+                const response = await fetch(`${API_BASE}/api/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        email, 
+                        password, 
+                        name: email.split('@')[0] // メールアドレスの@より前を名前として使用
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    authToken = data.token;
+                    userInfo = data.user;
+                    localStorage.setItem('parentAuthToken', authToken);
+                    
+                    addLog('✅ ユーザー登録・ログイン成功', 'success');
+                    showMainSection();
+                } else {
+                    addLog(`❌ 登録エラー: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                addLog(`❌ 通信エラー: ${error.message}`, 'error');
+            }
+        }
+
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            if (!email || !password) {
+                addLog('❌ メールアドレスとパスワードを入力してください', 'error');
+                return;
+            }
+
+            try {
+                addLog('🔄 ログイン中...', 'info');
+                
+                const response = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    authToken = data.token;
+                    userInfo = data.user;
+                    localStorage.setItem('parentAuthToken', authToken);
+                    
+                    addLog('✅ ログイン成功', 'success');
+                    showMainSection();
+                } else {
+                    addLog(`❌ ログインエラー: ${data.error}`, 'error');
+                    addLog('💡 アカウントが存在しない場合は「新規登録」をお試しください', 'info');
+                }
+            } catch (error) {
+                addLog(`❌ 通信エラー: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkAuth() {
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/me`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    userInfo = data.user;
+                    showMainSection();
+                } else {
+                    localStorage.removeItem('parentAuthToken');
+                    authToken = null;
+                }
+            } catch (error) {
+                addLog(`❌ 認証確認エラー: ${error.message}`, 'error');
+            }
+        }
+
+        function showMainSection() {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('mainSection').style.display = 'block';
+            
+            document.getElementById('userInfo').textContent = 
+                `👤 ${userInfo.name} (${userInfo.email})`;
+            
+            updateBatteryDisplay();
+            checkSafetyReportAccess();
+            addLog('✅ ログイン完了', 'success');
+        }
+
+        async function sendActivity() {
+            const batteryLevel = parseInt(document.getElementById('batteryLevel').value);
+            
+            if (isNaN(batteryLevel) || batteryLevel < 0 || batteryLevel > 100) {
+                addLog('❌ バッテリー残量は0-100の数値で入力してください', 'error');
+                return;
+            }
+
+            try {
+                addLog('🔄 安否情報送信中...', 'info');
+                
+                const response = await fetch(`${API_BASE}/api/activity`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        last_activity_at: new Date().toISOString(),
+                        battery_level: batteryLevel,
+                        device_info: navigator.userAgent.split(' ')[0]
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    addLog('✅ 安否情報送信完了', 'success');
+                    updateBatteryDisplay();
+                } else {
+                    addLog(`❌ 送信エラー: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                addLog(`❌ 通信エラー: ${error.message}`, 'error');
+            }
+        }
+
+        function updateBatteryDisplay() {
+            const batteryLevel = document.getElementById('batteryLevel').value;
+            const batteryEmoji = batteryLevel > 50 ? '🔋' : batteryLevel > 20 ? '🪫' : '🔴';
+            
+            document.getElementById('batteryDisplay').textContent = 
+                `${batteryEmoji} ${batteryLevel}%`;
+            
+            document.getElementById('lastUpdate').textContent = 
+                `最終更新: ${new Date().toLocaleString('ja-JP')}`;
+        }
+
+        function logout() {
+            localStorage.removeItem('parentAuthToken');
+            authToken = null;
+            userInfo = null;
+            
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('mainSection').style.display = 'none';
+            
+            addLog('👋 ログアウトしました', 'info');
+        }
+
+        function addLog(message, type = 'info') {
+            const logArea = document.getElementById('logArea');
+            const timestamp = new Date().toLocaleTimeString('ja-JP');
+            const logEntry = document.createElement('div');
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            
+            if (type === 'error') logEntry.style.color = '#dc3545';
+            if (type === 'success') logEntry.style.color = '#28a745';
+            if (type === 'info') logEntry.style.color = '#17a2b8';
+            
+            logArea.appendChild(logEntry);
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        // 安否報告機能のアクセス制御
+        async function checkSafetyReportAccess() {
+            try {
+                const response = await fetch(`${API_BASE}/api/subscription/status`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const features = data.available_features;
+                    const canUseSafetyReport = features.find(f => 
+                        f.feature_name === 'manual_safety_report'
+                    )?.is_enabled;
+
+                    const reportBtn = document.getElementById('safetyReportBtn');
+                    const upgradePrompt = document.getElementById('upgradePrompt');
+
+                    if (canUseSafetyReport) {
+                        reportBtn.style.display = 'block';
+                        upgradePrompt.style.display = 'none';
+                        addLog('✅ 手動安否報告が利用可能です', 'success');
+                    } else {
+                        reportBtn.style.display = 'none';
+                        upgradePrompt.style.display = 'block';
+                        addLog('ℹ️ 手動安否報告はプレミアム機能です', 'info');
+                    }
+                } else {
+                    // デフォルトで無料プランとして扱う
+                    document.getElementById('safetyReportBtn').style.display = 'none';
+                    document.getElementById('upgradePrompt').style.display = 'block';
+                }
+            } catch (error) {
+                console.log('プラン確認エラー:', error);
+                // エラー時は無料プランとして扱う
+                document.getElementById('safetyReportBtn').style.display = 'none';
+                document.getElementById('upgradePrompt').style.display = 'block';
+            }
+        }
+
+        // ペアリングコード表示
+        async function showPairingCode() {
+            try {
+                addLog('🔄 ペアリングコードを生成中...', 'info');
+                
+                const response = await fetch(`${API_BASE}/api/pairing/generate-code`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // ペアリングコードセクションを表示
+                    document.getElementById('pairingCodeSection').style.display = 'block';
+                    document.getElementById('pairingCode').textContent = data.pairing_code;
+                    
+                    addLog('✅ ペアリングコードを生成しました', 'success');
+                    
+                    // 5分後に自動で閉じる
+                    setTimeout(() => {
+                        hidePairingCode();
+                    }, 5 * 60 * 1000);
+                } else {
+                    const errorData = await response.json();
+                    addLog(`❌ ペアリングコード生成エラー: ${errorData.error}`, 'error');
+                }
+            } catch (error) {
+                addLog(`❌ ペアリングコード生成失敗: ${error.message}`, 'error');
+            }
+        }
+
+        // ペアリングコード非表示
+        function hidePairingCode() {
+            document.getElementById('pairingCodeSection').style.display = 'none';
+            addLog('ℹ️ ペアリングコードを閉じました', 'info');
+        }
+
+        // バッテリー残量の変更時に表示を更新
+        document.getElementById('batteryLevel').addEventListener('input', updateBatteryDisplay);
+    </script>
+</body>
+</html>

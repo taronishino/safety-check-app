@@ -674,7 +674,11 @@
 
         // 位置確認機能
         async function checkLocation(parentId) {
-            let lat, lng, address, updatedAt;
+            // デフォルト値を設定
+            let lat = 35.6762;
+            let lng = 139.6503;
+            let address = '東京都千代田区丸の内1-1-1';
+            let updatedAt = new Date().toLocaleString('ja-JP');
             
             try {
                 // 親の名前を取得

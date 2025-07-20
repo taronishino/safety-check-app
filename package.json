@@ -1,0 +1,32 @@
+{
+  "name": "safety-check-app",
+  "version": "1.0.0",
+  "description": "安否チェックアプリ - 家族の安全確認PWAアプリ",
+  "main": "index.js",
+  "scripts": {
+    "start": "node backend/test-server.js",
+    "dev": "node backend/test-server.js",
+    "build": "echo 'Static site, no build needed'",
+    "test": "echo 'No tests specified'"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "helmet": "^7.0.0",
+    "morgan": "^1.10.0",
+    "web-push": "^3.6.6"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": ["安否確認", "PWA", "家族", "位置情報", "プッシュ通知"],
+  "author": "taronishino",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/taronishino/safety-check-app.git"
+  }
+}

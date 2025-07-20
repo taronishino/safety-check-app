@@ -959,7 +959,10 @@
             const pairingSection = document.getElementById('pairingSection');
             if (pairingSection) {
                 pairingSection.style.display = 'block';
-                loadRegisteredParents();
+                // サブスクリプション状況を確認してから親一覧を読み込み
+                setTimeout(() => {
+                    loadRegisteredParents();
+                }, 100);
             }
         }
 

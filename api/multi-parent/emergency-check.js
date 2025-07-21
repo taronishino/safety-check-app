@@ -77,16 +77,25 @@ export default async function handler(req, res) {
     }
 
     // 緊急確認を記録
+    console.log('Inserting emergency check:', {
+      child_id: childId,
+      parent_id: parent_id,
+      message: message,
+      status: 'pending'
+    });
+
     const { data: emergencyCheck, error: insertError } = await supabase
       .from('emergency_checks')
       .insert({
         child_id: childId,
         parent_id: parent_id,
         message: message,
-        status: 'sent'
+        status: 'pending'
       })
       .select()
       .single();
+
+    console.log('Insert result:', { emergencyCheck, insertError });
 
     if (insertError) {
       console.error('Emergency check insert error:', insertError);

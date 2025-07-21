@@ -261,10 +261,16 @@
         let authToken = localStorage.getItem('parentAuthToken');
         let userInfo = null;
 
+        // アクティビティ検出用の変数
+        let lastActivityTime = new Date();
+        let activityTimer = null;
+        let isPageVisible = true;
+
         // 初期化
         if (authToken) {
             checkAuth();
             updateLastActivity();
+            startActivityDetection();
         }
 
         // 最後のスマホ操作時間を更新
@@ -284,6 +290,82 @@
             
             // 定期的に更新（1分ごと）
             setTimeout(updateLastActivity, 60000);
+        }
+
+        // アクティビティ検出の開始
+        function startActivityDetection() {
+            // ユーザーのアクティビティを検出するイベント
+            const activityEvents = [
+                'mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 
+                'click', 'keydown', 'touchmove'
+            ];
+
+            // アクティビティを記録する関数
+            function recordActivity() {
+                lastActivityTime = new Date();
+                
+                // アクティビティタイマーをリセット
+                if (activityTimer) {
+                    clearTimeout(activityTimer);
+                }
+                
+                // 5分間操作がなければ自動送信
+                activityTimer = setTimeout(() => {
+                    sendActivityUpdate();
+                }, 5 * 60 * 1000);
+            }
+
+            // イベントリスナーを追加
+            activityEvents.forEach(event => {
+                document.addEventListener(event, recordActivity, { passive: true });
+            });
+
+            // ページの表示/非表示を検出
+            document.addEventListener('visibilitychange', () => {
+                isPageVisible = !document.hidden;
+                if (isPageVisible) {
+                    recordActivity();
+                    sendActivityUpdate();
+                }
+            });
+
+            // アプリ起動時に一度送信
+            sendActivityUpdate();
+
+            // 定期的に送信（10分ごと）
+            setInterval(() => {
+                if (isPageVisible) {
+                    sendActivityUpdate();
+                }
+            }, 10 * 60 * 1000);
+        }
+
+        // アクティビティ更新をサーバーに送信
+        async function sendActivityUpdate() {
+            if (!authToken) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/activity`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        last_activity_at: lastActivityTime.toISOString(),
+                        device_info: 'parent-app-auto',
+                        is_auto: true
+                    })
+                });
+                
+                if (response.ok) {
+                    console.log('アクティビティ自動送信完了:', lastActivityTime.toLocaleString('ja-JP'));
+                } else {
+                    console.error('アクティビティ送信エラー');
+                }
+            } catch (error) {
+                console.error('アクティビティ送信失敗:', error);
+            }
         }
 
         async function register() {
@@ -388,6 +470,7 @@
                 `👤 ${userInfo.name} (${userInfo.email})`;
             
             updateLastActivity();
+            startActivityDetection(); // アクティビティ検出を開始
             checkEmergencyRequests(); // 緊急確認チェックを追加
             addLog('✅ ログイン完了', 'success');
         }

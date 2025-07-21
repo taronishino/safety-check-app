@@ -32,12 +32,12 @@ export default async function handler(req, res) {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const userId = decoded.userId;
 
-    // 親子関係を取得
+    // 親子関係を取得（親の最終活動時間も含む）
     const { data: relationships, error } = await supabase
       .from('relationships')
       .select(`
         *,
-        parent:parent_id(id, name, email),
+        parent:parent_id(id, name, email, last_activity, battery_level, device_info),
         child:child_id(id, name, email)
       `)
       .eq('child_id', userId);
@@ -55,7 +55,9 @@ export default async function handler(req, res) {
       parent_email: rel.parent?.email || '',
       nickname: rel.nickname || rel.parent?.name || 'Parent',
       created_at: rel.created_at,
-      last_activity: new Date().toISOString() // ダミーデータ
+      last_activity: rel.parent?.last_activity || new Date().toISOString(),
+      battery_level: rel.parent?.battery_level || null,
+      device_info: rel.parent?.device_info || 'unknown'
     }));
 
     res.status(200).json({

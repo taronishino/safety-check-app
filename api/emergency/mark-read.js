@@ -36,16 +36,40 @@ export default async function handler(req, res) {
 
     console.log('Marking emergency responses as read for child:', childId);
 
-    // 子供のすべての応答済み緊急確認にread_atタイムスタンプを追加
-    const { data: updatedRequests, error } = await supabase
-      .from('emergency_requests')
-      .update({
-        read_at: new Date().toISOString()
-      })
-      .eq('requester_id', childId)
-      .eq('status', 'responded')
-      .is('read_at', null) // まだ既読になっていないもののみ
-      .select();
+    // read_atカラムが存在するかチェック
+    let updatedRequests = [];
+    let error = null;
+    
+    try {
+      // まずカラムの存在確認
+      const testQuery = await supabase
+        .from('emergency_requests')
+        .select('read_at')
+        .limit(1);
+      
+      if (!testQuery.error) {
+        // read_atカラムが存在する場合は更新
+        const updateResult = await supabase
+          .from('emergency_requests')
+          .update({
+            read_at: new Date().toISOString()
+          })
+          .eq('requester_id', childId)
+          .eq('status', 'responded')
+          .is('read_at', null) // まだ既読になっていないもののみ
+          .select();
+        
+        updatedRequests = updateResult.data;
+        error = updateResult.error;
+      } else {
+        // read_atカラムが存在しない場合は既読処理をスキップ
+        console.log('read_at column not exists yet, skipping mark read');
+        updatedRequests = []; // 空の配列を返す
+      }
+    } catch (updateError) {
+      console.log('read_at column not exists yet, skipping mark read');
+      updatedRequests = [];
+    }
 
     if (error) {
       console.error('Mark read error:', {

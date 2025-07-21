@@ -244,6 +244,14 @@
                 </div>
             </div>
             
+            <!-- 親の安否報告表示エリア -->
+            <div id="parentReports" style="display: none; background: #f3e5f5; border: 2px solid #9c27b0; border-radius: 10px; padding: 20px; margin-bottom: 20px;">
+                <h3 style="margin: 0 0 15px 0; color: #7b1fa2;">👴👵 親からの安否報告</h3>
+                <div id="parentReportsList">
+                    <!-- 親の安否報告がここに表示される -->
+                </div>
+            </div>
+
             <!-- 緊急確認応答表示エリア -->
             <div id="emergencyResponses" style="display: none; background: #e8f5e8; border: 2px solid #4caf50; border-radius: 10px; padding: 20px; margin-bottom: 20px;">
                 <h3 style="margin: 0 0 15px 0; color: #2e7d32;">📱 安否報告受信</h3>
@@ -435,6 +443,8 @@
             loadSubscriptionStatus();
             checkEmergencyAccess();
             showPairingSection();
+            checkEmergencyResponses(); // 緊急確認応答をチェック
+            checkParentReports(); // 親の安否報告をチェック
             addLog('✅ ログイン完了', 'success');
         }
 
@@ -1223,11 +1233,74 @@
             }
         }
 
+        // 親の安否報告を取得
+        async function checkParentReports() {
+            try {
+                const response = await fetch(`${API_BASE}/api/child/get-parent-reports`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.reports && data.reports.length > 0) {
+                        showParentReports(data.reports);
+                    } else {
+                        hideParentReports();
+                    }
+                } else {
+                    console.log('親の安否報告取得エラー:', response.status);
+                    hideParentReports();
+                }
+            } catch (error) {
+                console.log('親の安否報告取得失敗:', error);
+                hideParentReports();
+            }
+        }
+
+        // 親の安否報告を表示
+        function showParentReports(reports) {
+            const reportsDiv = document.getElementById('parentReports');
+            const reportsList = document.getElementById('parentReportsList');
+            
+            // 最新3件のみ表示
+            const recentReports = reports.slice(0, 3);
+            
+            reportsList.innerHTML = recentReports.map(report => {
+                const reportTime = new Date(report.created_at).toLocaleString('ja-JP', {
+                    month: 'numeric',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                return `
+                    <div style="background: white; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #9c27b0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                            <strong style="color: #7b1fa2;">${report.parent_name}</strong>
+                            <span style="font-size: 12px; color: #666;">${reportTime}</span>
+                        </div>
+                        <div style="font-size: 16px; color: #333;">
+                            ${report.status_display}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            reportsDiv.style.display = 'block';
+            addLog(`👴👵 親の安否報告を${recentReports.length}件受信しました`, 'info');
+        }
+
+        // 親の安否報告を非表示
+        function hideParentReports() {
+            document.getElementById('parentReports').style.display = 'none';
+        }
+
         // 定期的な状況更新（30秒間隔）
         setInterval(() => {
             if (authToken && userInfo) {
                 loadParentsStatus();
                 checkEmergencyResponses(); // 緊急確認応答もチェック
+                checkParentReports(); // 親の安否報告もチェック
             }
         }, 30000);
     </script>

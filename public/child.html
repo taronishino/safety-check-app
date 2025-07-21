@@ -1099,11 +1099,20 @@
                 } else {
                     addLog(`❌ 登録エラー: ${data.error}`, 'error');
                     
-                    if (data.error.includes('無効') || data.error.includes('期限切れ')) {
-                        alert('ペアリングコードが無効または期限切れです。\\n親アプリで新しいコードを生成してください。');
-                    } else if (data.error.includes('登録済み')) {
-                        alert('すでに登録済みの親です。');
-                    } else if (data.reason === 'plan_limitation' || data.error.includes('無料プランでは')) {
+                    // 409エラーの詳細メッセージを表示
+                    if (response.status === 409) {
+                        if (data.message) {
+                            alert(data.message);
+                        } else if (data.error === 'Relationship already exists') {
+                            alert('この親は既に登録済みです。');
+                        } else if (data.error === 'Parent already paired with another child') {
+                            alert('この親は既に他の子とペアリング済みです。\\n既存のペアリングを解除してから再試行してください。');
+                        }
+                    } else if (data.error && data.error.includes('Invalid pairing code')) {
+                        alert('ペアリングコードが無効です。\\n正しいコードを入力してください。');
+                    } else if (data.error && data.error.includes('expired')) {
+                        alert('ペアリングコードが期限切れです。\\n親アプリで新しいコードを生成してください。');
+                    } else if (data.reason === 'plan_limitation' || (data.error && data.error.includes('無料プランでは'))) {
                         alert('無料プランでは1名の親のみ登録可能です。\\n\\n複数の親を登録するには、プレミアムプランにアップグレードしてください。');
                     } else {
                         alert(`登録エラー: ${data.error}`);

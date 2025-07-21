@@ -1189,7 +1189,9 @@
             responseArea.style.display = 'block';
             
             const responseHtml = responses.map(response => {
-                const parentName = response.parent?.name || '親';
+                // ニックネームを優先して表示
+                const parentData = parentsData.find(p => p.parent_id === response.parent_id);
+                const parentName = parentData?.nickname || response.parent?.name || '親';
                 const responseText = response.parent_response === 'safe' ? 
                     '✅ 大丈夫' : 
                     response.parent_response === 'need_help' ? 
@@ -1289,10 +1291,14 @@
                     minute: '2-digit'
                 });
                 
+                // ニックネームを優先して表示
+                const parentData = parentsData.find(p => p.parent_id === latestReport.parent_id);
+                const displayName = parentData?.nickname || latestReport.parent_name || '親';
+                
                 reportsList.innerHTML = `
                     <div style="background: white; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #9c27b0;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                            <strong style="color: #7b1fa2;">${latestReport.parent_name}</strong>
+                            <strong style="color: #7b1fa2;">${displayName}</strong>
                             <span style="font-size: 12px; color: #666;">${reportTime}</span>
                         </div>
                         <div style="font-size: 16px; color: #333;">

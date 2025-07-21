@@ -484,7 +484,7 @@
         // 安否報告機能のアクセス制御
         async function checkSafetyReportAccess() {
             try {
-                const response = await fetch(`${API_BASE}/api/subscription/status`, {
+                const response = await fetch(`${API_BASE}/api/parent/check-features`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
 
@@ -496,10 +496,15 @@
                     const reportBtn = document.getElementById('safetyReportBtn');
                     const upgradePrompt = document.getElementById('upgradePrompt');
 
-                    // 親側では手動安否報告を常に表示（子供側でプレミアム制御）
-                    reportBtn.style.display = 'block';
-                    upgradePrompt.style.display = 'none';
-                    addLog('✅ 手動安否報告が利用可能です', 'success');
+                    if (canUseSafetyReport) {
+                        reportBtn.style.display = 'block';
+                        upgradePrompt.style.display = 'none';
+                        addLog('✅ 手動安否報告が利用可能です（子側プレミアムプラン）', 'success');
+                    } else {
+                        reportBtn.style.display = 'none';
+                        upgradePrompt.style.display = 'block';
+                        addLog('ℹ️ 安否報告にはお子様のプレミアムプランが必要です', 'info');
+                    }
                 } else {
                     // デフォルトで無料プランとして扱う
                     document.getElementById('safetyReportBtn').style.display = 'none';

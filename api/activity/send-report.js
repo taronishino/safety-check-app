@@ -48,15 +48,28 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid status' });
     }
 
-    // プレミアムプラン確認
-    const { data: subscription, error: subError } = await supabase
-      .from('subscriptions')
-      .select('plan_type, status')
-      .eq('user_id', parentId)
-      .single();
+    // 親と関連付けられた子のプレミアムプラン確認
+    // まず親に関連付けられた子を取得
+    const { data: relationships, error: relError } = await supabase
+      .from('relationships')
+      .select('child_id')
+      .eq('parent_id', parentId);
 
-    if (subError || !subscription || subscription.plan_type !== 'premium' || subscription.status !== 'active') {
-      return res.status(403).json({ error: 'Premium plan required for safety reports' });
+    if (relError || !relationships || relationships.length === 0) {
+      return res.status(403).json({ error: 'No child relationships found' });
+    }
+
+    // 関連する子のいずれかがプレミアムプランかチェック
+    const childIds = relationships.map(rel => rel.child_id);
+    const { data: subscriptions, error: subError } = await supabase
+      .from('subscriptions')
+      .select('plan_type, status, user_id')
+      .in('user_id', childIds)
+      .eq('plan_type', 'premium')
+      .eq('status', 'active');
+
+    if (subError || !subscriptions || subscriptions.length === 0) {
+      return res.status(403).json({ error: 'Premium plan required for safety reports (child must have premium plan)' });
     }
 
     // 安否報告をactivitiesテーブルに記録

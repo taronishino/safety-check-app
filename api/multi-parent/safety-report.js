@@ -60,9 +60,25 @@ export default async function handler(req, res) {
       .eq('parent_id', parentId);
 
     if (relationships && relationships.length > 0) {
-      // 各子供への通知（実際のプッシュ通知実装は省略）
+      // 各子供の手動安否報告設定を確認
+      const childIds = relationships.map(rel => rel.child_id);
+      
+      const { data: childSettings } = await supabase
+        .from('user_settings')
+        .select('user_id, setting_value')
+        .in('user_id', childIds)
+        .eq('setting_name', 'manual_safety_reports');
+
+      // 各子供への通知（手動安否報告が有効な子供のみ）
       for (const rel of relationships) {
-        console.log(`Notifying child ${rel.child_id} about safety report from parent ${parentId}`);
+        const childSetting = childSettings?.find(setting => setting.user_id === rel.child_id);
+        const isEnabled = childSetting ? childSetting.setting_value === 'enabled' : true; // デフォルトは有効
+        
+        if (isEnabled) {
+          console.log(`Notifying child ${rel.child_id} about safety report from parent ${parentId}`);
+        } else {
+          console.log(`Skipping notification to child ${rel.child_id} - manual safety reports disabled`);
+        }
       }
     }
 

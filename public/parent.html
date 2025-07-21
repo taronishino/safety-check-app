@@ -678,7 +678,36 @@
         }
 
         // 安否報告モーダル表示
-        function showSafetyReportModal() {
+        async function showSafetyReportModal() {
+            // モーダル表示前に権限を再確認
+            addLog('🔍 権限を確認中...', 'info');
+            const accessResponse = await fetch(`${API_BASE}/api/parent/check-features`, {
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            });
+
+            if (accessResponse.ok) {
+                const accessData = await accessResponse.json();
+                const canUseSafetyReport = accessData.available_features.manual_reports;
+                const hasAccess = accessData.available_features.emergency_checks;
+                const manualReportsEnabled = accessData.manual_reports_setting;
+
+                if (!canUseSafetyReport) {
+                    if (!hasAccess) {
+                        addLog('❌ 安否報告には子側のプレミアムプランが必要です', 'error');
+                    } else if (!manualReportsEnabled) {
+                        addLog('❌ 子側で手動安否報告機能が無効になっています', 'error');
+                    } else {
+                        addLog('❌ 安否報告が利用できません', 'error');
+                    }
+                    await checkSafetyReportAccess(); // UI更新
+                    return;
+                }
+            } else {
+                addLog('❌ 権限確認に失敗しました', 'error');
+                return;
+            }
+
+            // 権限確認完了後にモーダル表示
             const modal = document.getElementById('safetyReportModal');
             modal.style.display = 'flex';
         }
@@ -693,6 +722,38 @@
         async function sendSafetyReport(statusType) {
             try {
                 hideSafetyReportModal();
+                
+                // 送信前に権限を再チェック
+                addLog('🔍 送信権限を確認中...', 'info');
+                const accessResponse = await fetch(`${API_BASE}/api/parent/check-features`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (accessResponse.ok) {
+                    const accessData = await accessResponse.json();
+                    const canUseSafetyReport = accessData.available_features.manual_reports;
+                    const hasAccess = accessData.available_features.emergency_checks;
+                    const manualReportsEnabled = accessData.manual_reports_setting;
+
+                    if (!canUseSafetyReport) {
+                        if (!hasAccess) {
+                            addLog('❌ 安否報告には子側のプレミアムプランが必要です', 'error');
+                            await checkSafetyReportAccess(); // UI更新
+                            return;
+                        } else if (!manualReportsEnabled) {
+                            addLog('❌ 子側で手動安否報告機能が無効になっています', 'error');
+                            await checkSafetyReportAccess(); // UI更新
+                            return;
+                        } else {
+                            addLog('❌ 安否報告が利用できません', 'error');
+                            await checkSafetyReportAccess(); // UI更新
+                            return;
+                        }
+                    }
+                } else {
+                    addLog('❌ 権限確認に失敗しました', 'error');
+                    return;
+                }
                 
                 const statusMessages = {
                     'fine': '元気です',
@@ -722,14 +783,26 @@
                 } else {
                     const errorData = await response.json();
                     addLog(`❌ 安否報告エラー: ${errorData.error}`, 'error');
+                    // エラー後にUI状態を更新
+                    await checkSafetyReportAccess();
                 }
             } catch (error) {
                 addLog(`❌ 安否報告失敗: ${error.message}`, 'error');
+                // エラー後にUI状態を更新
+                await checkSafetyReportAccess();
             }
         }
 
         // 定期的に緊急確認をチェック（30秒ごと）
         setInterval(checkEmergencyRequests, 30000);
+
+        // 定期的に安否報告権限をチェック（60秒ごと）
+        setInterval(async () => {
+            if (authToken && userInfo) {
+                console.log('定期的な権限チェック実行中...');
+                await checkSafetyReportAccess();
+            }
+        }, 60000);
 
         // デバッグテスト関数
         async function testParentData() {

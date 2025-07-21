@@ -281,12 +281,38 @@
                         // トグルスイッチの状態を更新
                         updateToggleUI();
                         
-                        // ローカルストレージから以前の設定を読み込み
-                        const savedSettings = localStorage.getItem('premiumSettings');
-                        if (savedSettings) {
-                            const parsed = JSON.parse(savedSettings);
-                            settings = { ...settings, ...parsed };
-                            updateToggleUI();
+                        // サーバーから保存済み設定を読み込み
+                        try {
+                            const settingsResponse = await fetch(`${API_BASE}/api/settings/load`, {
+                                headers: { 'Authorization': `Bearer ${authToken}` }
+                            });
+                            
+                            if (settingsResponse.ok) {
+                                const settingsData = await settingsResponse.json();
+                                if (settingsData.success && settingsData.settings) {
+                                    settings.location = settingsData.settings.location_sharing;
+                                    settings.manualReport = settingsData.settings.manual_safety_reports;
+                                    settings.emergency = settingsData.settings.emergency_checks;
+                                    updateToggleUI();
+                                }
+                            } else {
+                                // サーバーから読み込みできない場合はローカルストレージを使用
+                                const savedSettings = localStorage.getItem('premiumSettings');
+                                if (savedSettings) {
+                                    const parsed = JSON.parse(savedSettings);
+                                    settings = { ...settings, ...parsed };
+                                    updateToggleUI();
+                                }
+                            }
+                        } catch (loadError) {
+                            console.warn('サーバーから設定を読み込めませんでした:', loadError);
+                            // フォールバック: ローカルストレージから読み込み
+                            const savedSettings = localStorage.getItem('premiumSettings');
+                            if (savedSettings) {
+                                const parsed = JSON.parse(savedSettings);
+                                settings = { ...settings, ...parsed };
+                                updateToggleUI();
+                            }
                         }
                     } else {
                         planStatus.innerHTML = '<span class="plan-badge" style="background: #ffc107;">無料プラン</span>';
@@ -323,17 +349,49 @@
         // 設定を保存
         async function saveSettings() {
             try {
-                // ローカルストレージに保存
-                localStorage.setItem('premiumSettings', JSON.stringify(settings));
+                console.log('保存する設定:', settings);
+                console.log('認証トークン:', authToken);
+                console.log('API URL:', `${API_BASE}/api/settings/save`);
                 
-                // TODO: サーバーに設定を保存するAPIを実装
-                // 現在はローカルストレージのみ
+                // サーバーに設定を保存
+                const response = await fetch(`${API_BASE}/api/settings/save`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ settings })
+                });
+
+                console.log('レスポンスステータス:', response.status);
+                console.log('レスポンス OK:', response.ok);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('エラーレスポンス:', errorText);
+                    console.error('レスポンスヘッダー:', response.headers);
+                    let errorData;
+                    try {
+                        errorData = JSON.parse(errorText);
+                        console.error('パース済みエラー:', errorData);
+                    } catch (e) {
+                        errorData = { error: errorText };
+                        console.error('パースエラー:', e);
+                    }
+                    throw new Error(errorData.error || errorData.message || 'Failed to save settings');
+                }
+
+                const result = await response.json();
+                console.log('保存成功:', result);
+                
+                // サーバー保存成功後、ローカルストレージにも保存
+                localStorage.setItem('premiumSettings', JSON.stringify(settings));
                 
                 alert('設定を保存しました');
                 goBack();
             } catch (error) {
                 console.error('設定保存エラー:', error);
-                alert('設定の保存に失敗しました');
+                alert(`設定の保存に失敗しました: ${error.message}`);
             }
         }
 

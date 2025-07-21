@@ -4,6 +4,12 @@ import jwt from 'jsonwebtoken';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
+
+// 環境変数チェック
+if (!supabaseUrl || !supabaseKey) {
+  console.error('Missing Supabase environment variables');
+}
+
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req, res) {
@@ -103,7 +109,8 @@ export default async function handler(req, res) {
     console.error('Save settings error:', {
       name: error.name,
       message: error.message,
-      stack: error.stack
+      stack: error.stack,
+      code: error.code
     });
     
     // JWTエラーの場合は401を返す
@@ -111,9 +118,29 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Invalid token' });
     }
     
+    // Supabase接続エラーの可能性
+    if (error.message && error.message.includes('SUPABASE')) {
+      return res.status(500).json({ 
+        error: 'Database connection error',
+        message: 'SUPABASE environment variables may not be configured',
+        debug: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+    
+    // テーブルが存在しないエラー
+    if (error.message && (error.message.includes('relation "user_settings" does not exist') || 
+                         error.message.includes('user_settings'))) {
+      return res.status(500).json({ 
+        error: 'Database table not found',
+        message: 'user_settings table does not exist. Please run the migration script.',
+        debug: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+    
     res.status(500).json({ 
       error: 'Internal server error',
-      debug: error.message
+      message: 'An unexpected error occurred while saving settings',
+      debug: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 }

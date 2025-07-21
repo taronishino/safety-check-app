@@ -16,6 +16,7 @@ let activities = [];
 let subscriptions = [];
 let pairingCodes = [];
 let relationships = [];
+let userSettings = [];
 
 // ユーザー登録（テスト用）
 app.post('/api/auth/register', (req, res) => {
@@ -379,6 +380,92 @@ app.delete('/api/pairing/relationships/:parentId', (req, res) => {
 });
 
 // 設定関連
+app.get('/api/settings/load', (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ error: 'No authorization header' });
+  }
+  
+  const token = authHeader.replace('Bearer ', '');
+  const userId = token.replace('test-token-', '');
+  
+  // ユーザーの設定を取得
+  const userSettingsData = userSettings.filter(s => s.user_id === userId);
+  
+  // デフォルト設定
+  const settings = {
+    location_sharing: true,
+    manual_safety_reports: true,
+    emergency_checks: true
+  };
+  
+  // 保存された設定で上書き
+  userSettingsData.forEach(setting => {
+    if (setting.setting_name === 'location_sharing') {
+      settings.location_sharing = setting.setting_value === 'enabled';
+    } else if (setting.setting_name === 'manual_safety_reports') {
+      settings.manual_safety_reports = setting.setting_value === 'enabled';
+    } else if (setting.setting_name === 'emergency_checks') {
+      settings.emergency_checks = setting.setting_value === 'enabled';
+    }
+  });
+  
+  res.json({
+    success: true,
+    settings
+  });
+});
+
+app.post('/api/settings/save', (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ error: 'No authorization header' });
+  }
+  
+  const token = authHeader.replace('Bearer ', '');
+  const userId = token.replace('test-token-', '');
+  const { settings } = req.body;
+  
+  if (!settings || typeof settings !== 'object') {
+    return res.status(400).json({ error: 'Invalid settings data' });
+  }
+  
+  // 既存の設定を削除
+  userSettings = userSettings.filter(s => s.user_id !== userId);
+  
+  // 新しい設定を追加
+  const settingsToSave = [
+    {
+      user_id: userId,
+      setting_name: 'location_sharing',
+      setting_value: settings.location ? 'enabled' : 'disabled'
+    },
+    {
+      user_id: userId,
+      setting_name: 'manual_safety_reports',
+      setting_value: settings.manualReport ? 'enabled' : 'disabled'
+    },
+    {
+      user_id: userId,
+      setting_name: 'emergency_checks',
+      setting_value: settings.emergency ? 'enabled' : 'disabled'
+    }
+  ];
+  
+  userSettings.push(...settingsToSave);
+  
+  res.json({
+    success: true,
+    message: 'Settings saved successfully',
+    settings: {
+      location_sharing: settings.location,
+      manual_safety_reports: settings.manualReport,
+      emergency_checks: settings.emergency
+    }
+  });
+});
+
+// 旧形式の設定API（互換性用）
 app.get('/api/settings', (req, res) => {
   res.json({
     enable_daily_report: true,

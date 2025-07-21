@@ -88,6 +88,31 @@ export default async function handler(req, res) {
     
     console.log('Found premium subscriptions:', subscriptions);
 
+    // 各子供の手動安否報告設定を確認
+    const { data: childSettings, error: settingsError } = await supabase
+      .from('user_settings')
+      .select('user_id, setting_value')
+      .in('user_id', childIds)
+      .eq('setting_name', 'manual_safety_reports');
+
+    if (settingsError) {
+      console.error('Settings query error:', settingsError);
+      return res.status(500).json({ error: 'Database error fetching settings', debug: settingsError.message });
+    }
+
+    // 手動安否報告が有効な子供が1人もいない場合はエラー
+    const enabledChildren = childIds.filter(childId => {
+      const setting = childSettings?.find(s => s.user_id === childId);
+      return setting ? setting.setting_value === 'enabled' : true; // デフォルトは有効
+    });
+
+    if (enabledChildren.length === 0) {
+      console.log('All children have disabled manual safety reports');
+      return res.status(403).json({ error: 'All connected children have disabled manual safety reports' });
+    }
+
+    console.log('Children with enabled manual safety reports:', enabledChildren);
+
     // 安否報告をactivitiesテーブルに記録
     const statusMessages = {
       'fine': '元気です',

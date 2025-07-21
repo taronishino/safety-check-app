@@ -66,6 +66,17 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
     UNIQUE(user_id, endpoint)
 );
 
+-- ユーザー設定テーブル
+CREATE TABLE IF NOT EXISTS user_settings (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    setting_name VARCHAR(50) NOT NULL,
+    setting_value VARCHAR(20) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, setting_name)
+);
+
 -- インデックス作成（パフォーマンス向上）
 CREATE INDEX IF NOT EXISTS idx_relationships_parent ON relationships(parent_id);
 CREATE INDEX IF NOT EXISTS idx_relationships_child ON relationships(child_id);
@@ -73,6 +84,8 @@ CREATE INDEX IF NOT EXISTS idx_activities_user ON activities(user_id);
 CREATE INDEX IF NOT EXISTS idx_activities_created ON activities(created_at);
 CREATE INDEX IF NOT EXISTS idx_pairing_codes_code ON pairing_codes(code);
 CREATE INDEX IF NOT EXISTS idx_pairing_codes_expires ON pairing_codes(expires_at);
+CREATE INDEX IF NOT EXISTS idx_user_settings_user ON user_settings(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_settings_name ON user_settings(setting_name);
 
 -- 初期データ挿入（テスト用）
 -- パスワードは 'password' をbcryptでハッシュ化したもの
@@ -97,3 +110,16 @@ SELECT p.id, c.id, 'お父さん'
 FROM users p, users c 
 WHERE p.email = 'parent@example.com' AND c.email = 'child@example.com'
 ON CONFLICT (parent_id, child_id) DO NOTHING;
+
+-- 初期ユーザー設定（全機能有効）
+INSERT INTO user_settings (user_id, setting_name, setting_value)
+SELECT id, 'location_sharing', 'enabled' FROM users
+ON CONFLICT (user_id, setting_name) DO NOTHING;
+
+INSERT INTO user_settings (user_id, setting_name, setting_value)
+SELECT id, 'manual_safety_reports', 'enabled' FROM users
+ON CONFLICT (user_id, setting_name) DO NOTHING;
+
+INSERT INTO user_settings (user_id, setting_name, setting_value)
+SELECT id, 'emergency_checks', 'enabled' FROM users
+ON CONFLICT (user_id, setting_name) DO NOTHING;

@@ -232,6 +232,10 @@
                 🧪 簡単テスト
             </button>
             
+            <button class="btn btn-secondary" onclick="checkActivitiesTable()" style="margin-top: 10px;">
+                📋 テーブル確認
+            </button>
+            
             <div id="upgradePrompt" style="display: none; background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 10px; text-align: center;">
                 <div style="color: #856404; margin-bottom: 10px;">
                     💎 手動安否報告はプレミアム機能です
@@ -799,6 +803,43 @@
             } catch (error) {
                 addLog(`❌ 簡単テスト失敗: ${error.message}`, 'error');
                 console.error('簡単テスト失敗:', error);
+            }
+        }
+
+        // activitiesテーブル確認関数
+        async function checkActivitiesTable() {
+            try {
+                addLog('📋 activitiesテーブル確認中...', 'info');
+                
+                const response = await fetch(`${API_BASE}/api/debug/check-activities-table`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    console.log('テーブル確認結果:', data);
+                    addLog('✅ テーブル確認完了 - コンソールを確認', 'success');
+                    
+                    // 主要情報をログに表示
+                    addLog(`📋 テーブル存在: ${data.table_exists ? 'あり' : 'なし'}`, 'info');
+                    
+                    if (data.test_insert.error) {
+                        addLog(`❌ 挿入エラー: ${data.test_insert.error}`, 'error');
+                        if (data.test_insert.error_code) {
+                            addLog(`🔍 エラーコード: ${data.test_insert.error_code}`, 'info');
+                        }
+                    } else {
+                        addLog('✅ 挿入テスト成功', 'success');
+                    }
+                    
+                    if (data.sample_data.error) {
+                        addLog(`⚠️ データ取得エラー: ${data.sample_data.error}`, 'info');
+                    }
+                } else {
+                    addLog(`❌ テーブル確認エラー: ${data.error}`, 'error');
+                    console.error('テーブル確認エラー:', data);
+                }
+            } catch (error) {
+                addLog(`❌ テーブル確認失敗: ${error.message}`, 'error');
+                console.error('テーブル確認失敗:', error);
             }
         }
 

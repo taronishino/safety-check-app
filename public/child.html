@@ -546,7 +546,13 @@
                             </span>
                         </div>
                         <div class="last-activity">
-                            🔋 バッテリー: --% | 📱 最終アクセス: ${parent.last_activity || '--'}
+                            🔋 バッテリー: --% | 📱 最終スマホ操作: ${parent.last_activity ? new Date(parent.last_activity).toLocaleString('ja-JP', {
+                                month: 'numeric',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit'
+                            }) : '--'}
                         </div>
                         ${buttonContainer}
                     </div>
@@ -1168,7 +1174,8 @@
                     month: 'numeric',
                     day: 'numeric',
                     hour: '2-digit',
-                    minute: '2-digit'
+                    minute: '2-digit',
+                    second: '2-digit'
                 });
                 
                 return `

@@ -36,7 +36,7 @@ export default async function handler(req, res) {
 
     console.log('Checking emergency responses for child:', childId);
 
-    // 子供が送信した緊急確認依頼の応答を取得
+    // 子供が送信した緊急確認依頼の最新の応答を取得（1件のみ）
     const { data: responses, error } = await supabase
       .from('emergency_requests')
       .select(`
@@ -45,9 +45,9 @@ export default async function handler(req, res) {
       `)
       .eq('requester_id', childId)
       .eq('status', 'responded')
-      .gte('responded_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) // 24時間以内
+      .gte('responded_at', new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()) // 2時間以内
       .order('responded_at', { ascending: false })
-      .limit(5);
+      .limit(1);
 
     if (error) {
       console.error('Emergency responses fetch error:', {

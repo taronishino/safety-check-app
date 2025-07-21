@@ -65,12 +65,15 @@ export default async function handler(req, res) {
     }
 
     // 親子関係の確認
+    console.log('Checking relationship:', { parent_id, child_id: childId });
     const { data: relationship, error: relError } = await supabase
       .from('relationships')
       .select('*')
       .eq('parent_id', parent_id)
       .eq('child_id', childId)
       .single();
+      
+    console.log('Relationship check result:', { relationship, relError });
 
     if (relError || !relationship) {
       return res.status(403).json({ error: 'No relationship found' });
@@ -78,7 +81,7 @@ export default async function handler(req, res) {
 
     // 緊急確認を記録（emergency_requestsテーブル使用）
     console.log('Inserting emergency request:', {
-      child_id: childId,
+      requester_id: childId,
       parent_id: parent_id,
       message: message,
       status: 'pending'
@@ -87,7 +90,7 @@ export default async function handler(req, res) {
     const { data: emergencyCheck, error: insertError } = await supabase
       .from('emergency_requests')
       .insert({
-        child_id: childId,
+        requester_id: childId,
         parent_id: parent_id,
         message: message,
         status: 'pending'

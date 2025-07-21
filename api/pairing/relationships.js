@@ -31,6 +31,10 @@ export default async function handler(req, res) {
     const token = authHeader.substring(7);
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const userId = decoded.userId;
+    
+    console.log('=== Relationships Debug ===');
+    console.log('User ID:', userId);
+    console.log('User email:', decoded.email);
 
     // 親子関係を取得（親の最終活動時間も含む）
     const { data: relationships, error } = await supabase
@@ -44,8 +48,18 @@ export default async function handler(req, res) {
 
     if (error) {
       console.error('Relationships fetch error:', error);
-      return res.status(200).json({ relationships: [] });
+      return res.status(200).json({ 
+        relationships: [],
+        debug: {
+          error: error.message,
+          userId: userId,
+          hasError: true
+        }
+      });
     }
+    
+    console.log('Raw relationships data:', relationships);
+    console.log('Relationships count:', relationships?.length || 0);
 
     // データ整形
     const formattedRelationships = relationships.map(rel => ({

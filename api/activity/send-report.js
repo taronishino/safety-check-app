@@ -88,7 +88,7 @@ export default async function handler(req, res) {
     
     console.log('Found premium subscriptions:', subscriptions);
 
-    // 安否報告記録（activitiesテーブル作成まで一時的にシンプル版）
+    // 安否報告をactivitiesテーブルに記録
     const statusMessages = {
       'fine': '元気です',
       'ok': '問題ないです',
@@ -98,22 +98,46 @@ export default async function handler(req, res) {
     const reportMessage = message || statusMessages[status];
     const timestamp = new Date().toISOString();
     
-    console.log('Safety report completed (temporary mode):', {
+    console.log('Recording safety report to activities table:', {
       user_id: parentId,
-      status: status,
+      type: 'safety_report',
       message: reportMessage,
       timestamp: timestamp
     });
 
-    // TODO: activitiesテーブル作成後、実際のデータベース記録に変更
+    const { data: activity, error: actError } = await supabase
+      .from('activities')
+      .insert({
+        user_id: parentId,
+        type: 'safety_report',
+        message: reportMessage,
+        last_activity_at: timestamp,
+        device_info: `parent-manual-report-${status}`,
+        metadata: {
+          report_status: status,
+          report_type: 'manual'
+        },
+        created_at: timestamp
+      })
+      .select()
+      .single();
+
+    if (actError) {
+      console.error('Activity insert error:', actError);
+      return res.status(500).json({ 
+        error: 'Failed to record safety report',
+        debug: actError.message 
+      });
+    }
+
+    console.log('Safety report recorded successfully:', activity.id);
     
     res.status(200).json({
       success: true,
       message: `安否報告を送信しました: ${reportMessage}`,
+      report_id: activity.id,
       status: status,
-      timestamp: timestamp,
-      temporary_mode: true,
-      note: 'activitiesテーブル作成後に永続化されます'
+      timestamp: activity.created_at
     });
 
   } catch (error) {

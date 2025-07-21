@@ -152,10 +152,6 @@
         
         <div class="plan-info" id="planInfo">
             <div id="planStatus">プラン情報を読み込み中...</div>
-            <button id="downgradeBtn" class="save-btn" onclick="downgradePlan()" 
-                    style="background: #6c757d; margin-top: 15px; display: none;">
-                無料プランに変更
-            </button>
         </div>
 
         <!-- プレミアム機能設定 -->
@@ -206,6 +202,12 @@
 
         <button class="save-btn" id="saveBtn" onclick="saveSettings()" style="display: none;">
             設定を保存
+        </button>
+        
+        <!-- プラン変更ボタン -->
+        <button id="downgradeBtn" onclick="downgradePlan()" 
+                style="width: 100%; padding: 10px; font-size: 14px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; margin-top: 15px; display: none;">
+            無料プランに変更
         </button>
     </div>
 

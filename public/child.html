@@ -225,25 +225,6 @@
         <div id="mainSection" style="display: none;">
             <div class="user-info" id="userInfo"></div>
             
-            <!-- プラン表示エリア -->
-            <div class="plan-info" id="planInfo">
-                <div class="plan-status">
-                    <div>
-                        <strong>現在のプラン</strong>
-                        <span id="planBadge" class="status-badge">プラン</span>
-                    </div>
-                    <button id="upgradeBtn" class="btn btn-primary" onclick="upgradePlan()" style="font-size: 12px; padding: 8px 12px; display: none;">
-                        プレミアムにアップグレード
-                    </button>
-                </div>
-                <div style="font-size: 12px; color: #666;" id="planDescription">
-                    プラン情報を読み込み中...
-                </div>
-                <div id="planDetails" style="margin-top: 10px; font-size: 11px; color: #999;">
-                    <!-- プラン詳細情報 -->
-                </div>
-            </div>
-            
             <!-- 親の安否報告表示エリア -->
             <div id="parentReports" style="display: none; background: #f3e5f5; border: 2px solid #9c27b0; border-radius: 10px; padding: 20px; margin-bottom: 20px;">
                 <h3 style="margin: 0 0 15px 0; color: #7b1fa2;">👴👵 親からの安否報告</h3>
@@ -273,10 +254,33 @@
             <button class="btn btn-primary" onclick="refreshStatus()">
                 🔄 状況を更新
             </button>
+        </div>
+    </div>
 
-            <button class="btn btn-secondary" onclick="logout()">
-                ログアウト
-            </button>
+    <!-- プラン情報とログアウトボタン -->
+    <div class="container">
+        <!-- プラン表示エリア -->
+        <div class="plan-info" id="planInfo">
+            <div class="plan-status">
+                <div>
+                    <strong>現在のプラン</strong>
+                    <span id="planBadge" class="status-badge">プラン</span>
+                </div>
+                <button id="upgradeBtn" class="btn btn-primary" onclick="upgradePlan()" style="font-size: 12px; padding: 8px 12px; display: none;">
+                    プレミアムにアップグレード
+                </button>
+            </div>
+            <div style="font-size: 12px; color: #666;" id="planDescription">
+                プラン情報を読み込み中...
+            </div>
+            <div id="planDetails" style="margin-top: 10px; font-size: 11px; color: #999;">
+                <!-- プラン詳細情報 -->
+            </div>
+        </div>
+        
+        <button class="btn btn-secondary" onclick="logout()" style="margin-top: 15px;">
+            ログアウト
+        </button>
         </div>
     </div>
 
@@ -1217,7 +1221,16 @@
             }).join('');
             
             responseList.innerHTML = responseHtml;
-            addLog(`📱 緊急確認返信を${responses.length}件受信しました`, 'info');
+            
+            // 最新の応答者名を取得してログに表示
+            const latestResponse = responses[0];
+            if (latestResponse) {
+                const latestParentData = parentsData.find(p => p.parent_id === latestResponse.parent_id);
+                const latestParentName = latestParentData?.nickname || latestResponse.parent?.name || '親';
+                addLog(`📱 ${latestParentName}から緊急確認返信を${responses.length}件受信しました`, 'info');
+            } else {
+                addLog(`📱 緊急確認返信を${responses.length}件受信しました`, 'info');
+            }
         }
 
         // 緊急確認応答を非表示
@@ -1308,7 +1321,7 @@
                 `;
                 
                 reportsDiv.style.display = 'block';
-                addLog(`👴👵 親の安否報告を受信しました`, 'info');
+                addLog(`👴👵 ${displayName}から安否報告を受信しました`, 'info');
             }
         }
 

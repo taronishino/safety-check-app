@@ -55,9 +55,17 @@ export default async function handler(req, res) {
       .select('child_id')
       .eq('parent_id', parentId);
 
-    if (relError || !relationships || relationships.length === 0) {
+    if (relError) {
+      console.error('Relationships query error:', relError);
+      return res.status(500).json({ error: 'Database error fetching relationships', debug: relError.message });
+    }
+    
+    if (!relationships || relationships.length === 0) {
+      console.log('No child relationships found for parent:', parentId);
       return res.status(403).json({ error: 'No child relationships found' });
     }
+    
+    console.log('Found relationships:', relationships);
 
     // 関連する子のいずれかがプレミアムプランかチェック
     const childIds = relationships.map(rel => rel.child_id);
@@ -68,9 +76,17 @@ export default async function handler(req, res) {
       .eq('plan_type', 'premium')
       .eq('status', 'active');
 
-    if (subError || !subscriptions || subscriptions.length === 0) {
+    if (subError) {
+      console.error('Subscriptions query error:', subError);
+      return res.status(500).json({ error: 'Database error fetching subscriptions', debug: subError.message });
+    }
+    
+    if (!subscriptions || subscriptions.length === 0) {
+      console.log('No premium subscriptions found for children:', childIds);
       return res.status(403).json({ error: 'Premium plan required for safety reports (child must have premium plan)' });
     }
+    
+    console.log('Found premium subscriptions:', subscriptions);
 
     // 安否報告をactivitiesテーブルに記録
     const statusMessages = {

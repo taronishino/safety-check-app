@@ -36,15 +36,31 @@ export default async function handler(req, res) {
     console.log('User ID:', userId);
     console.log('User email:', decoded.email);
 
-    // 親子関係を取得（親の最終活動時間も含む）
+    // 親子関係を取得（シンプルバージョン）
     const { data: relationships, error } = await supabase
       .from('relationships')
-      .select(`
-        *,
-        parent:parent_id(id, name, email, last_activity, battery_level, device_info),
-        child:child_id(id, name, email)
-      `)
+      .select('*')
       .eq('child_id', userId);
+
+    console.log('Relationships query result:', { relationships, error });
+
+    if (!error && relationships && relationships.length > 0) {
+      // 親情報を別途取得
+      const parentIds = relationships.map(rel => rel.parent_id);
+      const { data: parents, error: parentError } = await supabase
+        .from('users')
+        .select('id, name, email, last_activity, battery_level, device_info')
+        .in('id', parentIds);
+      
+      console.log('Parents query result:', { parents, parentError });
+      
+      if (!parentError && parents) {
+        // 親情報をマッピング
+        relationships.forEach(rel => {
+          rel.parent = parents.find(p => p.id === rel.parent_id);
+        });
+      }
+    }
 
     if (error) {
       console.error('Relationships fetch error:', error);

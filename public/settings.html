@@ -273,16 +273,37 @@
                         document.getElementById('upgradeNotice').style.display = 'none';
                         downgradeBtn.style.display = 'block';
                         
-                        // ローカルストレージから以前の設定を読み込み（優先）
-                        const savedSettings = localStorage.getItem('premiumSettings');
-                        if (savedSettings) {
-                            const parsed = JSON.parse(savedSettings);
-                            settings = { ...settings, ...parsed };
-                        } else {
-                            // 初期設定（ローカル設定がない場合のみ）
-                            settings.location = features.location_sharing || false;
-                            settings.manualReport = features.manual_reports || false;
-                            settings.emergency = features.emergency_checks || false;
+                        // サーバーから設定を読み込み
+                        try {
+                            const settingsResponse = await fetch(`${API_BASE}/api/settings/load`, {
+                                headers: { 'Authorization': `Bearer ${authToken}` }
+                            });
+
+                            if (settingsResponse.ok) {
+                                const settingsData = await settingsResponse.json();
+                                settings = { ...settings, ...settingsData.settings };
+                                console.log('Settings loaded from server:', settings);
+                            } else {
+                                // サーバー設定読み込み失敗時はローカルストレージから読み込み
+                                const savedSettings = localStorage.getItem('premiumSettings');
+                                if (savedSettings) {
+                                    const parsed = JSON.parse(savedSettings);
+                                    settings = { ...settings, ...parsed };
+                                } else {
+                                    // 初期設定
+                                    settings.location = features.location_sharing || false;
+                                    settings.manualReport = features.manual_reports !== false; // デフォルトで有効
+                                    settings.emergency = features.emergency_checks !== false;  // デフォルトで有効
+                                }
+                            }
+                        } catch (settingsError) {
+                            console.error('Settings load error:', settingsError);
+                            // エラー時はローカルストレージから読み込み
+                            const savedSettings = localStorage.getItem('premiumSettings');
+                            if (savedSettings) {
+                                const parsed = JSON.parse(savedSettings);
+                                settings = { ...settings, ...parsed };
+                            }
                         }
                         
                         // トグルスイッチの状態を更新
@@ -322,17 +343,32 @@
         // 設定を保存
         async function saveSettings() {
             try {
-                // ローカルストレージに保存
-                localStorage.setItem('premiumSettings', JSON.stringify(settings));
-                
-                // TODO: サーバーに設定を保存するAPIを実装
-                // 現在はローカルストレージのみ
-                
-                alert('設定を保存しました');
-                goBack();
+                // サーバーに設定を保存
+                const response = await fetch(`${API_BASE}/api/settings/save`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ settings })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Settings saved to server:', data);
+                    
+                    // ローカルストレージにも保存（キャッシュ用）
+                    localStorage.setItem('premiumSettings', JSON.stringify(settings));
+                    
+                    alert('設定を保存しました');
+                    goBack();
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'サーバーエラー');
+                }
             } catch (error) {
                 console.error('設定保存エラー:', error);
-                alert('設定の保存に失敗しました');
+                alert('設定の保存に失敗しました: ' + error.message);
             }
         }
 

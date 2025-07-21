@@ -234,6 +234,15 @@
                 </div>
             </div>
 
+            <div id="settingDisabledPrompt" style="display: none; background: #f8d7da; padding: 15px; border-radius: 8px; margin-bottom: 10px; text-align: center;">
+                <div style="color: #721c24; margin-bottom: 10px;">
+                    ⚙️ 手動安否報告機能が無効です
+                </div>
+                <div style="font-size: 12px; color: #666;">
+                    お子様の設定画面で「手動安否報告機能」を有効にしてください。
+                </div>
+            </div>
+
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button onclick="showPairingCode()" style="flex: 1; padding: 8px 12px; font-size: 12px; background: #9c27b0; color: white; border: none; border-radius: 6px; cursor: pointer;">
                     🔗 ペアリング
@@ -493,29 +502,43 @@
                     const data = await response.json();
                     const features = data.available_features;
                     const canUseSafetyReport = features.manual_reports;
+                    const hasAccess = features.emergency_checks; // プレミアムアクセス
+                    const manualReportsEnabled = data.manual_reports_setting;
 
                     const reportBtn = document.getElementById('safetyReportBtn');
                     const upgradePrompt = document.getElementById('upgradePrompt');
+                    const settingDisabledPrompt = document.getElementById('settingDisabledPrompt');
 
                     if (canUseSafetyReport) {
                         reportBtn.style.display = 'block';
                         upgradePrompt.style.display = 'none';
-                        addLog('✅ 手動安否報告が利用可能です（子側プレミアムプラン）', 'success');
+                        settingDisabledPrompt.style.display = 'none';
+                        addLog('✅ 手動安否報告が利用可能です', 'success');
+                    } else if (hasAccess && !manualReportsEnabled) {
+                        // プレミアムだが設定で無効
+                        reportBtn.style.display = 'none';
+                        upgradePrompt.style.display = 'none';
+                        settingDisabledPrompt.style.display = 'block';
+                        addLog('ℹ️ 子側で手動安否報告機能が無効になっています', 'info');
                     } else {
+                        // プレミアムプランが必要
                         reportBtn.style.display = 'none';
                         upgradePrompt.style.display = 'block';
+                        settingDisabledPrompt.style.display = 'none';
                         addLog('ℹ️ 安否報告にはお子様のプレミアムプランが必要です', 'info');
                     }
                 } else {
                     // デフォルトで無料プランとして扱う
                     document.getElementById('safetyReportBtn').style.display = 'none';
                     document.getElementById('upgradePrompt').style.display = 'block';
+                    document.getElementById('settingDisabledPrompt').style.display = 'none';
                 }
             } catch (error) {
                 console.log('プラン確認エラー:', error);
                 // エラー時は無料プランとして扱う
                 document.getElementById('safetyReportBtn').style.display = 'none';
                 document.getElementById('upgradePrompt').style.display = 'block';
+                document.getElementById('settingDisabledPrompt').style.display = 'none';
             }
         }
 
@@ -829,6 +852,51 @@
             } catch (error) {
                 addLog(`❌ テーブル確認失敗: ${error.message}`, 'error');
                 console.error('テーブル確認失敗:', error);
+            }
+        }
+
+        // 子側設定確認関数
+        async function checkChildSettings() {
+            try {
+                addLog('🔍 子側設定確認中...', 'info');
+                
+                // 関連する子のIDを取得
+                const { data: relationships, error: relError } = await supabase
+                  .from('relationships')
+                  .select('child_id')
+                  .eq('parent_id', userInfo.id);
+                
+                if (!relationships || relationships.length === 0) {
+                    addLog('⚠️ 関連する子が見つかりません', 'info');
+                    return;
+                }
+                
+                const childId = relationships[0].child_id;
+                addLog(`👶 子ID: ${childId}`, 'info');
+                
+                // 子の認証トークンを使って設定確認APIを呼び出す必要があるため、
+                // 代わりに直接データベースを確認
+                const response = await fetch(`${API_BASE}/api/debug/check-settings`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('子側設定確認結果:', data);
+                    addLog('✅ 設定確認完了 - コンソールを確認', 'success');
+                    
+                    if (data.parentFeatureCheck) {
+                        const check = data.parentFeatureCheck;
+                        addLog(`💎 プレミアム: ${check.hasPremiumChild ? 'あり' : 'なし'}`, 'info');
+                        addLog(`📱 手動報告設定: ${check.manualReportsEnabled ? '有効' : '無効'}`, 'info');
+                        addLog(`✅ 手動報告利用可能: ${check.canUseManualReports ? 'はい' : 'いいえ'}`, 'info');
+                    }
+                } else {
+                    addLog(`❌ 設定確認エラー: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                addLog(`❌ 設定確認失敗: ${error.message}`, 'error');
+                console.error('設定確認失敗:', error);
             }
         }
 

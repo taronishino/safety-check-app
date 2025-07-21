@@ -76,9 +76,22 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Database error' });
     }
 
+    // 子側の設定を確認（手動安否報告機能のオン/オフ）
+    const { data: childSettings, error: settingsError } = await supabase
+      .from('user_settings')
+      .select('user_id, setting_name, setting_value')
+      .in('user_id', childIds)
+      .eq('setting_name', 'manual_safety_reports');
+
+    if (settingsError) {
+      console.error('Child settings fetch error:', settingsError);
+      // 設定取得エラーの場合はデフォルトで有効とする
+    }
+
     // いずれかの子がプレミアムプランかチェック
     let hasPremiumChild = false;
     let hasTrialChild = false;
+    let manualReportsEnabled = false;
 
     if (subscriptions && subscriptions.length > 0) {
       for (const sub of subscriptions) {
@@ -91,14 +104,28 @@ export default async function handler(req, res) {
       }
     }
 
+    // 子側で手動安否報告機能が有効かチェック
+    if (childSettings && childSettings.length > 0) {
+      for (const setting of childSettings) {
+        if (setting.setting_value === 'enabled') {
+          manualReportsEnabled = true;
+          break;
+        }
+      }
+    } else {
+      // 設定がない場合はデフォルトで有効
+      manualReportsEnabled = true;
+    }
+
     const hasAccess = hasPremiumChild || hasTrialChild;
+    const canUseManualReports = hasAccess && manualReportsEnabled;
 
     // 機能利用可能性を返す
     res.status(200).json({
       available_features: {
         emergency_checks: hasAccess,
         location_sharing: hasAccess,
-        manual_reports: hasAccess  // 親側安否報告
+        manual_reports: canUseManualReports  // プレミアム＋子側設定が有効
       },
       subscription: {
         plan_type: hasAccess ? 'premium' : 'basic',
@@ -106,7 +133,8 @@ export default async function handler(req, res) {
         is_trial_active: hasTrialChild
       },
       child_relationships: relationships.length,
-      premium_children: hasPremiumChild ? 1 : 0
+      premium_children: hasPremiumChild ? 1 : 0,
+      manual_reports_setting: manualReportsEnabled
     });
 
   } catch (error) {

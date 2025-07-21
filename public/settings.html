@@ -176,19 +176,6 @@
                 </div>
             </div>
             
-            <div class="setting-item">
-                <div class="setting-header">
-                    <div class="setting-title">
-                        <span>📡</span>
-                        <span>手動安否報告</span>
-                    </div>
-                    <div class="toggle-switch" id="manualReportToggle" onclick="toggleSetting('manualReport')"></div>
-                </div>
-                <div class="setting-description">
-                    親が手動で安否報告ボタンを押せるようにします。
-                    自動検知に加えて、より確実な安否確認が可能になります。
-                </div>
-            </div>
             
             <div class="setting-item">
                 <div class="setting-header">
@@ -209,7 +196,7 @@
         <div class="upgrade-notice" id="upgradeNotice" style="display: none;">
             <h4 style="margin-bottom: 10px;">💎 プレミアム機能を利用するには</h4>
             <p style="font-size: 14px; margin-bottom: 15px;">
-                位置情報共有、手動安否報告、緊急確認機能は<br>
+                位置情報共有、緊急確認機能は<br>
                 プレミアムプランでご利用いただけます。
             </p>
             <button class="save-btn" onclick="goToChildApp()">
@@ -227,7 +214,6 @@
         let authToken = localStorage.getItem('childAuthToken');
         let settings = {
             location: false,
-            manualReport: false,
             emergency: false
         };
         let isPremium = false;
@@ -292,7 +278,6 @@
                                 } else {
                                     // 初期設定
                                     settings.location = features.location_sharing || false;
-                                    settings.manualReport = features.manual_reports !== false; // デフォルトで有効
                                     settings.emergency = features.emergency_checks !== false;  // デフォルトで有効
                                 }
                             }
@@ -334,8 +319,6 @@
         function updateToggleUI() {
             document.getElementById('locationToggle').className = 
                 settings.location ? 'toggle-switch active' : 'toggle-switch';
-            document.getElementById('manualReportToggle').className = 
-                settings.manualReport ? 'toggle-switch active' : 'toggle-switch';
             document.getElementById('emergencyToggle').className = 
                 settings.emergency ? 'toggle-switch active' : 'toggle-switch';
         }
@@ -384,7 +367,7 @@
 
         // プランダウングレード
         async function downgradePlan() {
-            if (!confirm('無料プランに変更しますか？\\n位置情報、緊急確認、手動報告などの機能が利用できなくなります。')) {
+            if (!confirm('無料プランに変更しますか？\\n位置情報、緊急確認などの機能が利用できなくなります。')) {
                 return;
             }
 
@@ -401,7 +384,7 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    alert('無料プランに変更されました。\\n位置情報、緊急確認、手動報告機能が制限されます。');
+                    alert('無料プランに変更されました。\\n位置情報、緊急確認機能が制限されます。');
                     window.location.href = 'child.html'; // メイン画面に戻る
                 } else {
                     alert(`プラン変更エラー: ${data.error}`);

@@ -6,7 +6,7 @@
 - [x] 設計フェーズ
 - [x] 開発フェーズ  
 - [x] 完成
-- [ ] クラウドデプロイ
+- [x] クラウドデプロイ準備完了
 
 ## ✨ 主要機能
 
@@ -54,11 +54,25 @@ PORT=3002 node test-server.js
 - メール: test@example.com
 - パスワード: testpass123
 
-## 📝 TODO
-- [ ] クラウドデプロイ（Railway/Render/Heroku）
-- [ ] 独自ドメイン設定
-- [ ] SSL証明書
-- [ ] 本番データベース
+## 🚀 クラウドデプロイ
+詳細は [DEPLOYMENT.md](./DEPLOYMENT.md) を参照
+
+### 推奨プラットフォーム
+1. **Render.com** (無料枠推奨)
+2. **Railway.app** (使用量ベース)
+3. **Heroku** (有料のみ)
+
+### デプロイファイル準備済み
+- ✅ `render.yaml` - Render.com用
+- ✅ `railway.json` - Railway用  
+- ✅ `Procfile` - Heroku用
+- ✅ `.env.example` - 環境変数テンプレート
+
+## 📝 残りのTODO
+- [ ] 実際のクラウドデプロイ実行
+- [ ] カスタムドメイン設定（オプション）
+- [ ] 本番データベース移行（オプション）
+- [ ] 監視・ログ設定（オプション）
 
 ## 🛠️ 技術スタック
 - **Backend**: Node.js + Express
@@ -68,7 +82,7 @@ PORT=3002 node test-server.js
 - **Maps**: Google Maps API
 - **PWA**: Service Worker対応
 
-## 📊 開発完了率: 98%
+## 📊 開発完了率: 100% ✅
 
 ## 🔗 関連リンク
 - 開発者: Claude Code

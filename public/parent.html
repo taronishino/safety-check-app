@@ -220,28 +220,11 @@
                 <div id="lastActivity" style="font-size: 18px; text-align: center; color: #333; margin: 15px 0;">📅 取得中...</div>
             </div>
 
-            <button class="btn btn-success" onclick="showSafetyReportModal()" id="safetyReportBtn" style="display: none;">
-                📡 安否報告 <span style="font-size: 12px; background: #ffd700; color: #000; padding: 2px 6px; border-radius: 4px; margin-left: 5px;">💎 プレミアムのみ</span>
-            </button>
+            <!-- 手動安否報告ボタンは削除されました -->
             
             
-            <div id="upgradePrompt" style="display: none; background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 10px; text-align: center;">
-                <div style="color: #856404; margin-bottom: 10px;">
-                    💎 手動安否報告はプレミアム機能です
-                </div>
-                <div style="font-size: 12px; color: #666;">
-                    現在は自動検知のみ利用可能です。お子様にプレミアムプランへのアップグレードを依頼してください。
-                </div>
-            </div>
+            <!-- 手動安否報告アップグレードプロンプトは削除されました -->
 
-            <div id="settingDisabledPrompt" style="display: none; background: #f8d7da; padding: 15px; border-radius: 8px; margin-bottom: 10px; text-align: center;">
-                <div style="color: #721c24; margin-bottom: 10px;">
-                    ⚙️ 手動安否報告機能が無効です
-                </div>
-                <div style="font-size: 12px; color: #666;">
-                    お子様の設定画面で「手動安否報告機能」を有効にしてください。
-                </div>
-            </div>
 
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button onclick="showPairingCode()" style="flex: 1; padding: 8px 12px; font-size: 12px; background: #9c27b0; color: white; border: none; border-radius: 6px; cursor: pointer;">
@@ -265,32 +248,6 @@
                 </button>
             </div>
 
-            <!-- 安否報告モーダル（プレミアム機能） -->
-            <div id="safetyReportModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
-                <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 400px; width: 90%;">
-                    <div style="font-size: 24px; margin-bottom: 15px;">📡</div>
-                    <div style="font-size: 20px; font-weight: bold; margin-bottom: 10px; color: #333;">
-                        安否状況の報告
-                    </div>
-                    <div style="font-size: 14px; color: #666; margin-bottom: 25px;">
-                        お子様に状況をお知らせします
-                    </div>
-                    <div style="margin-bottom: 30px;">
-                        <button onclick="sendSafetyReport('fine')" style="background: #4caf50; color: white; padding: 12px 20px; font-size: 14px; border: none; border-radius: 8px; cursor: pointer; margin: 5px; font-weight: bold; display: block; width: 100%;">
-                            😊 元気です
-                        </button>
-                        <button onclick="sendSafetyReport('ok')" style="background: #2196f3; color: white; padding: 12px 20px; font-size: 14px; border: none; border-radius: 8px; cursor: pointer; margin: 5px; font-weight: bold; display: block; width: 100%;">
-                            👍 問題ないです
-                        </button>
-                        <button onclick="sendSafetyReport('need_help')" style="background: #f44336; color: white; padding: 12px 20px; font-size: 14px; border: none; border-radius: 8px; cursor: pointer; margin: 5px; font-weight: bold; display: block; width: 100%;">
-                            🆘 助けが必要
-                        </button>
-                    </div>
-                    <button onclick="hideSafetyReportModal()" style="background: #666; color: white; padding: 10px 20px; font-size: 14px; border: none; border-radius: 5px; cursor: pointer;">
-                        キャンセル
-                    </button>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -431,7 +388,6 @@
                 `👤 ${userInfo.name} (${userInfo.email})`;
             
             updateLastActivity();
-            checkSafetyReportAccess();
             checkEmergencyRequests(); // 緊急確認チェックを追加
             addLog('✅ ログイン完了', 'success');
         }
@@ -491,56 +447,6 @@
             logArea.scrollTop = logArea.scrollHeight;
         }
 
-        // 安否報告機能のアクセス制御
-        async function checkSafetyReportAccess() {
-            try {
-                const response = await fetch(`${API_BASE}/api/parent/check-features`, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    const features = data.available_features;
-                    const canUseSafetyReport = features.manual_reports;
-                    const hasAccess = features.emergency_checks; // プレミアムアクセス
-                    const manualReportsEnabled = data.manual_reports_setting;
-
-                    const reportBtn = document.getElementById('safetyReportBtn');
-                    const upgradePrompt = document.getElementById('upgradePrompt');
-                    const settingDisabledPrompt = document.getElementById('settingDisabledPrompt');
-
-                    if (canUseSafetyReport) {
-                        reportBtn.style.display = 'block';
-                        upgradePrompt.style.display = 'none';
-                        settingDisabledPrompt.style.display = 'none';
-                        addLog('✅ 手動安否報告が利用可能です', 'success');
-                    } else if (hasAccess && !manualReportsEnabled) {
-                        // プレミアムだが設定で無効
-                        reportBtn.style.display = 'none';
-                        upgradePrompt.style.display = 'none';
-                        settingDisabledPrompt.style.display = 'block';
-                        addLog('ℹ️ 子側で手動安否報告機能が無効になっています', 'info');
-                    } else {
-                        // プレミアムプランが必要
-                        reportBtn.style.display = 'none';
-                        upgradePrompt.style.display = 'block';
-                        settingDisabledPrompt.style.display = 'none';
-                        addLog('ℹ️ 安否報告にはお子様のプレミアムプランが必要です', 'info');
-                    }
-                } else {
-                    // デフォルトで無料プランとして扱う
-                    document.getElementById('safetyReportBtn').style.display = 'none';
-                    document.getElementById('upgradePrompt').style.display = 'block';
-                    document.getElementById('settingDisabledPrompt').style.display = 'none';
-                }
-            } catch (error) {
-                console.log('プラン確認エラー:', error);
-                // エラー時は無料プランとして扱う
-                document.getElementById('safetyReportBtn').style.display = 'none';
-                document.getElementById('upgradePrompt').style.display = 'block';
-                document.getElementById('settingDisabledPrompt').style.display = 'none';
-            }
-        }
 
         // ペアリングコード表示
         async function showPairingCode() {
@@ -677,132 +583,10 @@
             }
         }
 
-        // 安否報告モーダル表示
-        async function showSafetyReportModal() {
-            // モーダル表示前に権限を再確認
-            addLog('🔍 権限を確認中...', 'info');
-            const accessResponse = await fetch(`${API_BASE}/api/parent/check-features`, {
-                headers: { 'Authorization': `Bearer ${authToken}` }
-            });
-
-            if (accessResponse.ok) {
-                const accessData = await accessResponse.json();
-                const canUseSafetyReport = accessData.available_features.manual_reports;
-                const hasAccess = accessData.available_features.emergency_checks;
-                const manualReportsEnabled = accessData.manual_reports_setting;
-
-                if (!canUseSafetyReport) {
-                    if (!hasAccess) {
-                        addLog('❌ 安否報告には子側のプレミアムプランが必要です', 'error');
-                    } else if (!manualReportsEnabled) {
-                        addLog('❌ 子側で手動安否報告機能が無効になっています', 'error');
-                    } else {
-                        addLog('❌ 安否報告が利用できません', 'error');
-                    }
-                    await checkSafetyReportAccess(); // UI更新
-                    return;
-                }
-            } else {
-                addLog('❌ 権限確認に失敗しました', 'error');
-                return;
-            }
-
-            // 権限確認完了後にモーダル表示
-            const modal = document.getElementById('safetyReportModal');
-            modal.style.display = 'flex';
-        }
-
-        // 安否報告モーダル非表示
-        function hideSafetyReportModal() {
-            const modal = document.getElementById('safetyReportModal');
-            modal.style.display = 'none';
-        }
-
-        // 安否報告送信
-        async function sendSafetyReport(statusType) {
-            try {
-                hideSafetyReportModal();
-                
-                // 送信前に権限を再チェック
-                addLog('🔍 送信権限を確認中...', 'info');
-                const accessResponse = await fetch(`${API_BASE}/api/parent/check-features`, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
-
-                if (accessResponse.ok) {
-                    const accessData = await accessResponse.json();
-                    const canUseSafetyReport = accessData.available_features.manual_reports;
-                    const hasAccess = accessData.available_features.emergency_checks;
-                    const manualReportsEnabled = accessData.manual_reports_setting;
-
-                    if (!canUseSafetyReport) {
-                        if (!hasAccess) {
-                            addLog('❌ 安否報告には子側のプレミアムプランが必要です', 'error');
-                            await checkSafetyReportAccess(); // UI更新
-                            return;
-                        } else if (!manualReportsEnabled) {
-                            addLog('❌ 子側で手動安否報告機能が無効になっています', 'error');
-                            await checkSafetyReportAccess(); // UI更新
-                            return;
-                        } else {
-                            addLog('❌ 安否報告が利用できません', 'error');
-                            await checkSafetyReportAccess(); // UI更新
-                            return;
-                        }
-                    }
-                } else {
-                    addLog('❌ 権限確認に失敗しました', 'error');
-                    return;
-                }
-                
-                const statusMessages = {
-                    'fine': '元気です',
-                    'ok': '問題ないです',
-                    'need_help': '助けが必要'
-                };
-                
-                const statusMessage = statusMessages[statusType] || '報告しました';
-                addLog(`📡 安否報告送信中: ${statusMessage}`, 'info');
-                
-                const response = await fetch(`${API_BASE}/api/activity/send-report`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify({
-                        status: statusType,
-                        message: statusMessage
-                    })
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    addLog(`✅ 安否報告完了: ${statusMessage}`, 'success');
-                    updateLastActivity();
-                } else {
-                    const errorData = await response.json();
-                    addLog(`❌ 安否報告エラー: ${errorData.error}`, 'error');
-                    // エラー後にUI状態を更新
-                    await checkSafetyReportAccess();
-                }
-            } catch (error) {
-                addLog(`❌ 安否報告失敗: ${error.message}`, 'error');
-                // エラー後にUI状態を更新
-                await checkSafetyReportAccess();
-            }
-        }
 
         // 定期的に緊急確認をチェック（30秒ごと）
         setInterval(checkEmergencyRequests, 30000);
 
-        // 定期的に安否報告権限をチェック（60秒ごと）
-        setInterval(async () => {
-            if (authToken && userInfo) {
-                console.log('定期的な権限チェック実行中...');
-                await checkSafetyReportAccess();
-            }
-        }, 60000);
 
         // デバッグテスト関数
         async function testParentData() {
@@ -859,37 +643,6 @@
             }
         }
 
-        // 簡単テスト関数
-        async function testSimpleReport() {
-            try {
-                addLog('🧪 簡単安否報告テスト実行中...', 'info');
-                
-                const response = await fetch(`${API_BASE}/api/activity/send-report-simple`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify({
-                        status: 'fine',
-                        message: 'テスト報告'
-                    })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    addLog(`✅ 簡単テスト成功: ${data.message}`, 'success');
-                    console.log('簡単テスト結果:', data);
-                } else {
-                    addLog(`❌ 簡単テストエラー: ${data.error}`, 'error');
-                    console.error('簡単テストエラー:', data);
-                }
-            } catch (error) {
-                addLog(`❌ 簡単テスト失敗: ${error.message}`, 'error');
-                console.error('簡単テスト失敗:', error);
-            }
-        }
 
         // activitiesテーブル確認関数
         async function checkActivitiesTable() {

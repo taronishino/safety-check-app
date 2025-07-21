@@ -39,7 +39,6 @@ export default async function handler(req, res) {
 
     // 2. 子のサブスクリプション状況を取得
     let childSubscriptions = [];
-    let childSettings = [];
     
     if (relationships && relationships.length > 0) {
       const childIds = relationships.map(rel => rel.child_id);
@@ -49,14 +48,8 @@ export default async function handler(req, res) {
         .select('user_id, plan_type, status, trial_end')
         .in('user_id', childIds);
       
-      const { data: settings } = await supabase
-        .from('user_settings')
-        .select('user_id, setting_name, setting_value')
-        .in('user_id', childIds)
-        .eq('setting_name', 'manual_safety_reports');
       
       childSubscriptions = subs || [];
-      childSettings = settings || [];
     }
 
     // 3. デバッグ情報をまとめる
@@ -64,12 +57,10 @@ export default async function handler(req, res) {
       parent_id: parentId,
       relationships: relationships || [],
       child_subscriptions: childSubscriptions,
-      child_settings: childSettings,
       analysis: {
         has_children: relationships && relationships.length > 0,
         children_count: relationships ? relationships.length : 0,
         premium_children: childSubscriptions.filter(s => s.plan_type === 'premium' && s.status === 'active').length,
-        manual_reports_enabled_children: childSettings.filter(s => s.setting_value === 'enabled').length,
         should_allow_manual_reports: false
       }
     };
@@ -82,17 +73,11 @@ export default async function handler(req, res) {
     const targetChildSub = childSubscriptions.find(s => s.user_id === targetChildId);
     const hasChildPremium = targetChildSub && targetChildSub.plan_type === 'premium' && targetChildSub.status === 'active';
     
-    // メインの子の手動報告設定
-    const targetChildSetting = childSettings.find(s => s.user_id === targetChildId);
-    const isManualReportsEnabled = targetChildSetting ? targetChildSetting.setting_value === 'enabled' : true;
-    
-    debug.analysis.should_allow_manual_reports = hasChildPremium && isManualReportsEnabled;
+    debug.analysis.should_allow_manual_reports = false; // Feature removed
     debug.analysis.premium_access = hasChildPremium;
-    debug.analysis.manual_reports_setting = isManualReportsEnabled;
     debug.analysis.target_child_id = targetChildId;
     debug.analysis.target_child_premium = hasChildPremium;
-    debug.analysis.target_child_manual_enabled = isManualReportsEnabled;
-    debug.analysis.note = 'Using first child only (1-parent:1-child design)';
+    debug.analysis.note = 'Manual safety reports feature removed. Using 1-parent:1-child design';
 
     res.status(200).json(debug);
 

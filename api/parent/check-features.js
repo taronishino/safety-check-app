@@ -52,8 +52,7 @@ export default async function handler(req, res) {
       return res.status(200).json({
         available_features: {
           emergency_checks: false,
-          location_sharing: false,
-          manual_reports: false
+          location_sharing: false
         },
         subscription: {
           plan_type: 'basic',
@@ -76,22 +75,10 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Database error' });
     }
 
-    // 子側の設定を確認（手動安否報告機能のオン/オフ）
-    const { data: childSettings, error: settingsError } = await supabase
-      .from('user_settings')
-      .select('user_id, setting_name, setting_value')
-      .in('user_id', childIds)
-      .eq('setting_name', 'manual_safety_reports');
-
-    if (settingsError) {
-      console.error('Child settings fetch error:', settingsError);
-      // 設定取得エラーの場合はデフォルトで有効とする
-    }
 
     // いずれかの子がプレミアムプランかチェック
     let hasPremiumChild = false;
     let hasTrialChild = false;
-    let manualReportsEnabled = false;
 
     if (subscriptions && subscriptions.length > 0) {
       for (const sub of subscriptions) {
@@ -113,21 +100,14 @@ export default async function handler(req, res) {
     const hasChildPremium = childSub && 
       ((childSub.plan_type === 'premium' && childSub.status === 'active') ||
        (childSub.trial_end && new Date(childSub.trial_end) > new Date()));
-    
-    // その子の手動安否報告設定をチェック
-    const childSetting = childSettings?.find(setting => setting.user_id === targetChildId);
-    const isManualReportsEnabled = childSetting ? childSetting.setting_value === 'enabled' : true; // デフォルトは有効
 
     const hasAccess = hasChildPremium;
-    const canUseManualReports = hasAccess && isManualReportsEnabled;
-    manualReportsEnabled = isManualReportsEnabled;
 
     // 機能利用可能性を返す
     res.status(200).json({
       available_features: {
         emergency_checks: hasAccess,
-        location_sharing: hasAccess,
-        manual_reports: canUseManualReports  // プレミアム＋子側設定が有効
+        location_sharing: hasAccess
       },
       subscription: {
         plan_type: hasAccess ? 'premium' : 'basic',
@@ -135,8 +115,7 @@ export default async function handler(req, res) {
         is_trial_active: hasTrialChild
       },
       child_relationships: relationships.length,
-      premium_children: hasPremiumChild ? 1 : 0,
-      manual_reports_setting: manualReportsEnabled
+      premium_children: hasPremiumChild ? 1 : 0
     });
 
   } catch (error) {

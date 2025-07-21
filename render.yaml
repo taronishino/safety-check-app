@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: safety-check-app
+    env: node
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
+    healthCheckPath: /api/hello
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GOOGLE_MAPS_API_KEY
+        sync: false
+    autoDeploy: false
+    rootDir: ./
+    region: oregon
+    plan: free

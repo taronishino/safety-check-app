@@ -1,9 +1,10 @@
 {
-  "name": "safety-check-test",
+  "name": "safety-check-app",
   "version": "1.0.0",
-  "description": "Safety Check Test Server",
+  "description": "Safety Check App - Family Safety Monitoring System",
   "main": "test-server.js",
   "scripts": {
+    "start": "node test-server.js",
     "test": "node test-server.js"
   },
   "dependencies": {

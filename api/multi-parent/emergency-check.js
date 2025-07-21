@@ -76,8 +76,8 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: 'No relationship found' });
     }
 
-    // 緊急確認を記録
-    console.log('Inserting emergency check:', {
+    // 緊急確認を記録（emergency_requestsテーブル使用）
+    console.log('Inserting emergency request:', {
       child_id: childId,
       parent_id: parent_id,
       message: message,
@@ -85,7 +85,7 @@ export default async function handler(req, res) {
     });
 
     const { data: emergencyCheck, error: insertError } = await supabase
-      .from('emergency_checks')
+      .from('emergency_requests')
       .insert({
         child_id: childId,
         parent_id: parent_id,

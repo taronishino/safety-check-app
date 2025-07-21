@@ -228,6 +228,10 @@
                 🔍 デバッグテスト
             </button>
             
+            <button class="btn btn-secondary" onclick="testSimpleReport()" style="margin-top: 10px;">
+                🧪 簡単テスト
+            </button>
+            
             <div id="upgradePrompt" style="display: none; background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 10px; text-align: center;">
                 <div style="color: #856404; margin-bottom: 10px;">
                     💎 手動安否報告はプレミアム機能です
@@ -763,6 +767,38 @@
             } catch (error) {
                 addLog(`❌ デバッグテスト失敗: ${error.message}`, 'error');
                 console.error('デバッグテスト失敗:', error);
+            }
+        }
+
+        // 簡単テスト関数
+        async function testSimpleReport() {
+            try {
+                addLog('🧪 簡単安否報告テスト実行中...', 'info');
+                
+                const response = await fetch(`${API_BASE}/api/activity/send-report-simple`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        status: 'fine',
+                        message: 'テスト報告'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    addLog(`✅ 簡単テスト成功: ${data.message}`, 'success');
+                    console.log('簡単テスト結果:', data);
+                } else {
+                    addLog(`❌ 簡単テストエラー: ${data.error}`, 'error');
+                    console.error('簡単テストエラー:', data);
+                }
+            } catch (error) {
+                addLog(`❌ 簡単テスト失敗: ${error.message}`, 'error');
+                console.error('簡単テスト失敗:', error);
             }
         }
 

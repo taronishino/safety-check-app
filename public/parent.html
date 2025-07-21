@@ -730,9 +730,31 @@
                     const debugInfo = data.debug_info;
                     addLog(`👤 親ID: ${debugInfo.parent_id}`, 'info');
                     addLog(`👥 子関係数: ${debugInfo.relationships.length}`, 'info');
+                    
+                    // 関係詳細表示
+                    if (debugInfo.relationships.length > 0) {
+                        debugInfo.relationships.forEach((rel, index) => {
+                            addLog(`👥 関係${index + 1}: child_id=${rel.child_id}`, 'info');
+                        });
+                    }
+                    
                     if (debugInfo.children_data && debugInfo.children_data.children) {
                         addLog(`👶 子ユーザー数: ${debugInfo.children_data.children.length}`, 'info');
                         addLog(`💎 サブスクリプション数: ${debugInfo.children_data.subscriptions.length}`, 'info');
+                        
+                        // サブスクリプション詳細表示
+                        if (debugInfo.children_data.subscriptions.length > 0) {
+                            debugInfo.children_data.subscriptions.forEach((sub, index) => {
+                                addLog(`💎 サブスク${index + 1}: user_id=${sub.user_id}, plan=${sub.plan_type}, status=${sub.status}`, 'info');
+                            });
+                        } else {
+                            addLog('⚠️ プレミアムサブスクリプションが見つかりません', 'info');
+                        }
+                        
+                        // エラー情報表示
+                        if (debugInfo.children_data.subError) {
+                            addLog(`❌ サブスクエラー: ${debugInfo.children_data.subError.message}`, 'error');
+                        }
                     }
                 } else {
                     addLog(`❌ デバッグテストエラー: ${data.error}`, 'error');

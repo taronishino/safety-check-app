@@ -105,8 +105,8 @@ export default async function handler(req, res) {
     }
 
     // シンプル化: 1親:1子なので、その1人の子の状態のみをチェック
-    // 注意: 既存データでは複数子がいる可能性があるため、最初の子のみを使用
-    const targetChildId = childIds[0]; // 最初（または唯一）の子
+    // 注意: 既存データでは複数子がいる可能性があるため、最後の子を使用（最新のペアリング）
+    const targetChildId = childIds[childIds.length - 1]; // 最後（最新）の子
     
     // その子のプレミアムプラン状態をチェック
     const childSub = subscriptions?.find(sub => sub.user_id === targetChildId);

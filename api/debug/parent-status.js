@@ -76,7 +76,7 @@ export default async function handler(req, res) {
 
     // 4. 最終判定（1親:1子の新仕様）
     const childIds = relationships.map(rel => rel.child_id);
-    const targetChildId = childIds[0]; // 最初（メイン）の子のみを使用
+    const targetChildId = childIds[childIds.length - 1]; // 最後（最新）の子のみを使用
     
     // メインの子のプレミアムプラン状態
     const targetChildSub = childSubscriptions.find(s => s.user_id === targetChildId);

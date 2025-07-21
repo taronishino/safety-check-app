@@ -23,23 +23,35 @@ export default async function handler(req, res) {
   }
 
   try {
-    // activitiesテーブルの構造を確認
-    const { data: tableInfo, error: tableError } = await supabase
-      .rpc('get_table_columns', { table_name: 'activities' })
-      .then(() => null) // RPCが存在しない場合は無視
-      .catch(() => null);
+    console.log('Starting activities table check...');
 
     // 代替方法: 実際のデータを1件取得してみる
-    const { data: sampleData, error: sampleError } = await supabase
-      .from('activities')
-      .select('*')
-      .limit(1);
+    let sampleData = null;
+    let sampleError = null;
+    try {
+      const result = await supabase
+        .from('activities')
+        .select('*')
+        .limit(1);
+      sampleData = result.data;
+      sampleError = result.error;
+    } catch (err) {
+      sampleError = err;
+    }
 
     // テーブルが存在するかテスト
-    const { data: testData, error: testError } = await supabase
-      .from('activities')
-      .select('user_id, activity_type, last_activity_at, device_info, metadata, created_at')
-      .limit(1);
+    let testData = null;
+    let testError = null;
+    try {
+      const result = await supabase
+        .from('activities')
+        .select('user_id, activity_type, last_activity_at, device_info, metadata, created_at')
+        .limit(1);
+      testData = result.data;
+      testError = result.error;
+    } catch (err) {
+      testError = err;
+    }
 
     // 簡単な挿入テスト（エラーを確認するため）
     const testInsertData = {
@@ -50,25 +62,35 @@ export default async function handler(req, res) {
       metadata: JSON.stringify({ test: true })
     };
 
-    const { data: insertTest, error: insertError } = await supabase
-      .from('activities')
-      .insert(testInsertData)
-      .select();
+    let insertTest = null;
+    let insertError = null;
+    try {
+      const result = await supabase
+        .from('activities')
+        .insert(testInsertData)
+        .select();
+      insertTest = result.data;
+      insertError = result.error;
+    } catch (err) {
+      insertError = err;
+    }
+
+    console.log('Activities table check completed');
 
     // 結果を返す
     res.status(200).json({
       table_exists: !testError,
       sample_data: {
         data: sampleData,
-        error: sampleError?.message
+        error: sampleError?.message || sampleError?.toString()
       },
       test_select: {
         data: testData,
-        error: testError?.message
+        error: testError?.message || testError?.toString()
       },
       test_insert: {
         data: insertTest,
-        error: insertError?.message,
+        error: insertError?.message || insertError?.toString(),
         error_code: insertError?.code,
         error_details: insertError?.details
       },

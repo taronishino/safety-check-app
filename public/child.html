@@ -303,9 +303,9 @@
                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; text-align: center; font-size: 18px; letter-spacing: 2px;" maxlength="6">
             </div>
             <div style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px; font-weight: bold;">ニックネーム（任意）</label>
-                <input type="text" id="parentNickname" placeholder="お父さん、お母さんなど" 
-                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box;">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">ニックネーム（必須）</label>
+                <input type="text" id="parentNickname" placeholder="お父さん、お母さんなど（必須）" 
+                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box;" required>
             </div>
             <button class="btn btn-primary" onclick="registerParent()" 
                     style="background: #9c27b0; margin-bottom: 10px;">
@@ -1015,6 +1015,11 @@
                 return;
             }
 
+            if (!nickname) {
+                addLog('❌ ニックネームを入力してください', 'error');
+                return;
+            }
+
             try {
                 addLog('🔄 親を登録中...', 'info');
                 
@@ -1026,7 +1031,7 @@
                     },
                     body: JSON.stringify({
                         code: pairingCode,
-                        nickname: nickname || undefined
+                        nickname: nickname
                     })
                 });
 
@@ -1129,13 +1134,63 @@
                             <div style="font-size: 12px; color: #666;">${parent.parent_email}</div>
                             <div style="font-size: 11px; color: #999;">登録日: ${new Date(parent.created_at).toLocaleDateString('ja-JP')}</div>
                         </div>
-                        <button onclick="removeParent('${parent.parent_id}')" 
-                                style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 5px; font-size: 12px; cursor: pointer;">
-                            削除
-                        </button>
+                        <div style="display: flex; gap: 5px;">
+                            <button onclick="editParentNickname('${parent.parent_id}', '${parent.nickname || parent.parent_name}')" 
+                                    style="background: #007bff; color: white; border: none; padding: 5px 10px; border-radius: 5px; font-size: 12px; cursor: pointer;">
+                                編集
+                            </button>
+                            <button onclick="removeParent('${parent.parent_id}')" 
+                                    style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 5px; font-size: 12px; cursor: pointer;">
+                                削除
+                            </button>
+                        </div>
                     </div>
                 </div>
             `).join('');
+        }
+
+        // 親のニックネーム編集
+        async function editParentNickname(parentId, currentNickname) {
+            const newNickname = prompt('新しいニックネームを入力してください:', currentNickname);
+            
+            if (newNickname === null) {
+                return; // キャンセル
+            }
+            
+            if (!newNickname.trim()) {
+                alert('ニックネームは必須です。');
+                return;
+            }
+
+            try {
+                addLog('🔄 ニックネームを更新中...', 'info');
+                
+                const response = await fetch(`${API_BASE}/api/pairing/update-nickname`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        parent_id: parentId,
+                        nickname: newNickname.trim()
+                    })
+                });
+
+                if (response.ok) {
+                    addLog('✅ ニックネームを更新しました', 'success');
+                    loadRegisteredParents(); // 一覧を再読み込み
+                    loadParentsStatus(); // 親の状態も再読み込み
+                    alert('ニックネームを更新しました！');
+                } else {
+                    const data = await response.json();
+                    addLog(`❌ 更新エラー: ${data.error}`, 'error');
+                    alert(`更新エラー: ${data.error}`);
+                }
+            } catch (error) {
+                addLog(`❌ 更新失敗: ${error.message}`, 'error');
+                alert(`更新失敗: ${error.message}`);
+            }
         }
 
         // 親の登録削除

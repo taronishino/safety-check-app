@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>親アプリデバッグ</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .info { background: #f0f0f0; padding: 10px; margin: 10px 0; }
+        .error { background: #ffebee; color: #c62828; padding: 10px; margin: 10px 0; }
+        .success { background: #e8f5e8; color: #2e7d32; padding: 10px; margin: 10px 0; }
+        button { padding: 10px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h2>親アプリデバッグページ</h2>
+    
+    <div id="status">読み込み中...</div>
+    
+    <button onclick="checkAuth()">認証状態確認</button>
+    <button onclick="checkEmergencies()">緊急確認チェック</button>
+    <button onclick="clearStorage()">ストレージクリア</button>
+    
+    <div id="results"></div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        let authToken = localStorage.getItem('parentAuthToken') || localStorage.getItem('auth_token');
+        
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = type;
+            div.textContent = new Date().toLocaleTimeString() + ' - ' + message;
+            document.getElementById('results').appendChild(div);
+        }
+        
+        async function checkAuth() {
+            log('認証トークン: ' + (authToken ? '存在' : '未設定'));
+            
+            if (!authToken) {
+                log('認証トークンが設定されていません', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/me`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log('ログイン中: ' + data.user.name + ' (' + data.user.email + ')', 'success');
+                } else {
+                    log('認証失敗: ' + response.status, 'error');
+                }
+            } catch (error) {
+                log('認証エラー: ' + error.message, 'error');
+            }
+        }
+        
+        async function checkEmergencies() {
+            if (!authToken) {
+                log('先に認証状態を確認してください', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/emergency/status`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log('緊急確認: ' + (data.has_pending_requests ? '有り' : '無し'), 
+                        data.has_pending_requests ? 'success' : 'info');
+                    if (data.has_pending_requests) {
+                        log('依頼者: ' + data.requester_name);
+                    }
+                } else {
+                    const errorText = await response.text();
+                    log('緊急確認チェック失敗: ' + response.status + ' - ' + errorText, 'error');
+                }
+            } catch (error) {
+                log('緊急確認エラー: ' + error.message, 'error');
+            }
+        }
+        
+        function clearStorage() {
+            localStorage.clear();
+            log('ストレージをクリアしました', 'success');
+            location.reload();
+        }
+        
+        // 初期実行
+        document.getElementById('status').textContent = 'デバッグページ読み込み完了';
+        checkAuth();
+    </script>
+</body>
+</html>

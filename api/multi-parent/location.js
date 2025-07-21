@@ -50,14 +50,32 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: 'No relationship found' });
     }
 
-    // 最新の位置情報を取得（実際の実装では位置情報テーブルから取得）
-    // ここではダミーデータを返す
+    // 親の最新位置情報を取得
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('location_lat, location_lng, location_address, location_updated_at')
+      .eq('id', parent_id)
+      .single();
+
+    if (userError) {
+      console.error('User location fetch error:', userError);
+      return res.status(500).json({ error: 'Failed to fetch location' });
+    }
+
+    // 位置情報が未取得の場合
+    if (!userData.location_lat || !userData.location_lng) {
+      return res.status(404).json({ 
+        error: 'Location not available',
+        message: '親の位置情報がまだ取得されていません'
+      });
+    }
+
     const locationData = {
-      latitude: 35.6812 + (Math.random() - 0.5) * 0.01, // 東京駅周辺のランダムな位置
-      longitude: 139.7671 + (Math.random() - 0.5) * 0.01,
-      address: '東京都千代田区丸の内1-9-1',
-      last_updated: new Date().toISOString(),
-      accuracy: 10 // メートル
+      latitude: parseFloat(userData.location_lat),
+      longitude: parseFloat(userData.location_lng),
+      address: userData.location_address || `緯度:${userData.location_lat}, 経度:${userData.location_lng}`,
+      last_updated: userData.location_updated_at || new Date().toISOString(),
+      accuracy: 10 // メートル（推定値）
     };
 
     res.status(200).json({

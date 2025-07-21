@@ -88,7 +88,7 @@ export default async function handler(req, res) {
     
     console.log('Found premium subscriptions:', subscriptions);
 
-    // 安否報告をactivitiesテーブルに記録
+    // 安否報告記録（activitiesテーブル作成まで一時的にシンプル版）
     const statusMessages = {
       'fine': '元気です',
       'ok': '問題ないです',
@@ -96,53 +96,24 @@ export default async function handler(req, res) {
     };
 
     const reportMessage = message || statusMessages[status];
+    const timestamp = new Date().toISOString();
     
-    console.log('Inserting activity record:', {
+    console.log('Safety report completed (temporary mode):', {
       user_id: parentId,
-      activity_type: 'safety_report',
-      last_activity_at: new Date().toISOString(),
-      device_info: 'parent-manual-report',
-      metadata: {
-        report_status: status,
-        message: reportMessage,
-        report_type: 'manual'
-      }
+      status: status,
+      message: reportMessage,
+      timestamp: timestamp
     });
 
-    const { data: activity, error: actError } = await supabase
-      .from('activities')
-      .insert({
-        user_id: parentId,
-        activity_type: 'safety_report',
-        last_activity_at: new Date().toISOString(),
-        device_info: `parent-manual-report-${status}`,
-        metadata: JSON.stringify({
-          report_status: status,
-          message: reportMessage,
-          report_type: 'manual'
-        })
-      })
-      .select()
-      .single();
-
-    console.log('Activity insert result:', { data: activity, error: actError });
-
-    if (actError) {
-      console.error('Activity insert error:', actError);
-      return res.status(500).json({ 
-        error: 'Failed to record safety report',
-        debug: actError.message 
-      });
-    }
-
-    console.log('Safety report recorded successfully:', activity.id);
-
+    // TODO: activitiesテーブル作成後、実際のデータベース記録に変更
+    
     res.status(200).json({
       success: true,
       message: `安否報告を送信しました: ${reportMessage}`,
-      report_id: activity.id,
       status: status,
-      timestamp: activity.last_activity_at
+      timestamp: timestamp,
+      temporary_mode: true,
+      note: 'activitiesテーブル作成後に永続化されます'
     });
 
   } catch (error) {

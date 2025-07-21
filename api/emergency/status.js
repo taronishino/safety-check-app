@@ -32,17 +32,17 @@ export default async function handler(req, res) {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const parentId = decoded.userId;
 
-    // 親に対する未応答の緊急確認依頼を取得
+    console.log('Emergency status check for parent ID:', parentId);
+    
+    // 親に対する未応答の緊急確認依頼を取得（JOINなしでシンプルに）
     const { data: emergencyRequests, error } = await supabase
       .from('emergency_requests')
-      .select(`
-        *,
-        requester:requester_id(name)
-      `)
+      .select('*')
       .eq('parent_id', parentId)
       .eq('status', 'pending')
-      .order('created_at', { ascending: false })
-      .limit(1);
+      .order('created_at', { ascending: false });
+      
+    console.log('Emergency requests result:', { emergencyRequests, error });
 
     if (error) {
       console.error('Emergency requests fetch error:', {
@@ -60,7 +60,24 @@ export default async function handler(req, res) {
     }
 
     const hasPendingRequests = emergencyRequests && emergencyRequests.length > 0;
-    const requesterName = hasPendingRequests ? emergencyRequests[0].requester?.name : null;
+    
+    // 依頼者の名前を別途取得
+    let requesterName = null;
+    if (hasPendingRequests && emergencyRequests[0].requester_id) {
+      const { data: requester } = await supabase
+        .from('users')
+        .select('name')
+        .eq('id', emergencyRequests[0].requester_id)
+        .single();
+      requesterName = requester?.name || 'Unknown';
+    }
+
+    console.log('Final response:', {
+      has_pending_requests: hasPendingRequests,
+      requester_name: requesterName,
+      pending_count: emergencyRequests ? emergencyRequests.length : 0,
+      requests: emergencyRequests
+    });
 
     res.status(200).json({
       has_pending_requests: hasPendingRequests,

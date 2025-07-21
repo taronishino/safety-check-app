@@ -104,21 +104,40 @@ export default async function handler(req, res) {
       }
     }
 
-    // 子側で手動安否報告機能が有効かチェック
-    if (childSettings && childSettings.length > 0) {
-      for (const setting of childSettings) {
-        if (setting.setting_value === 'enabled') {
-          manualReportsEnabled = true;
-          break;
-        }
+    // 重要: 手動安否報告は「すべての子」が条件を満たす必要がある
+    // 1. すべての子がプレミアムプランである
+    // 2. すべての子が手動安否報告を有効にしている
+    
+    let allChildrenHavePremium = true;
+    let allChildrenHaveManualReportsEnabled = true;
+    
+    // プレミアムプラン要件チェック（すべての子が必要）
+    for (const childId of childIds) {
+      const childSub = subscriptions?.find(sub => sub.user_id === childId);
+      const hasChildPremium = childSub && 
+        ((childSub.plan_type === 'premium' && childSub.status === 'active') ||
+         (childSub.trial_end && new Date(childSub.trial_end) > new Date()));
+      
+      if (!hasChildPremium) {
+        allChildrenHavePremium = false;
+        break;
       }
-    } else {
-      // 設定がない場合はデフォルトで有効
-      manualReportsEnabled = true;
+    }
+    
+    // 手動安否報告設定チェック（すべての子が必要）
+    for (const childId of childIds) {
+      const childSetting = childSettings?.find(setting => setting.user_id === childId);
+      const isEnabled = childSetting ? childSetting.setting_value === 'enabled' : true; // デフォルトは有効
+      
+      if (!isEnabled) {
+        allChildrenHaveManualReportsEnabled = false;
+        break;
+      }
     }
 
-    const hasAccess = hasPremiumChild || hasTrialChild;
-    const canUseManualReports = hasAccess && manualReportsEnabled;
+    const hasAccess = allChildrenHavePremium;
+    const canUseManualReports = hasAccess && allChildrenHaveManualReportsEnabled;
+    manualReportsEnabled = allChildrenHaveManualReportsEnabled;
 
     // 機能利用可能性を返す
     res.status(200).json({

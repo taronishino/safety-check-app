@@ -74,13 +74,37 @@ export default async function handler(req, res) {
       }
     };
 
-    // 4. 最終判定
-    const hasPremiumChild = childSubscriptions.some(s => s.plan_type === 'premium' && s.status === 'active');
-    const hasManualReportsEnabled = childSettings.length === 0 || childSettings.some(s => s.setting_value === 'enabled');
+    // 4. 最終判定（すべての子が条件を満たす必要）
+    const childIds = relationships.map(rel => rel.child_id);
     
-    debug.analysis.should_allow_manual_reports = hasPremiumChild && hasManualReportsEnabled;
-    debug.analysis.premium_access = hasPremiumChild;
-    debug.analysis.manual_reports_setting = hasManualReportsEnabled;
+    let allChildrenHavePremium = true;
+    let allChildrenHaveManualReportsEnabled = true;
+    
+    // すべての子がプレミアムプランかチェック
+    for (const childId of childIds) {
+      const childSub = childSubscriptions.find(s => s.user_id === childId);
+      const hasChildPremium = childSub && childSub.plan_type === 'premium' && childSub.status === 'active';
+      if (!hasChildPremium) {
+        allChildrenHavePremium = false;
+        break;
+      }
+    }
+    
+    // すべての子が手動報告を有効にしているかチェック
+    for (const childId of childIds) {
+      const childSetting = childSettings.find(s => s.user_id === childId);
+      const isEnabled = childSetting ? childSetting.setting_value === 'enabled' : true;
+      if (!isEnabled) {
+        allChildrenHaveManualReportsEnabled = false;
+        break;
+      }
+    }
+    
+    debug.analysis.should_allow_manual_reports = allChildrenHavePremium && allChildrenHaveManualReportsEnabled;
+    debug.analysis.premium_access = allChildrenHavePremium;
+    debug.analysis.manual_reports_setting = allChildrenHaveManualReportsEnabled;
+    debug.analysis.all_children_premium = allChildrenHavePremium;
+    debug.analysis.all_children_manual_enabled = allChildrenHaveManualReportsEnabled;
 
     res.status(200).json(debug);
 

@@ -327,7 +327,7 @@
 
     <script>
         const API_BASE = window.location.origin;
-        let authToken = localStorage.getItem('childAuthToken');
+        let authToken = localStorage.getItem('auth_token') || localStorage.getItem('childAuthToken');
         let userInfo = null;
         let parentsData = [];
 
@@ -363,7 +363,8 @@
                 if (response.ok) {
                     authToken = data.token;
                     userInfo = data.user;
-                    localStorage.setItem('childAuthToken', authToken);
+                    localStorage.setItem('auth_token', authToken);
+                    localStorage.setItem('childAuthToken', authToken); // 後方互換性のため
                     
                     // 選択されたプランを適用
                     const selectedPlan = localStorage.getItem('selectedPlan');
@@ -407,7 +408,8 @@
                 if (response.ok) {
                     authToken = data.token;
                     userInfo = data.user;
-                    localStorage.setItem('childAuthToken', authToken);
+                    localStorage.setItem('auth_token', authToken);
+                    localStorage.setItem('childAuthToken', authToken); // 後方互換性のため
                     
                     addLog('✅ ログイン成功', 'success');
                     showMainSection();
@@ -431,7 +433,8 @@
                     userInfo = data.user;
                     showMainSection();
                 } else {
-                    localStorage.removeItem('childAuthToken');
+                    localStorage.removeItem('auth_token');
+            localStorage.removeItem('childAuthToken');
                     authToken = null;
                 }
             } catch (error) {
@@ -837,6 +840,7 @@
         }
 
         function logout() {
+            localStorage.removeItem('auth_token');
             localStorage.removeItem('childAuthToken');
             authToken = null;
             userInfo = null;

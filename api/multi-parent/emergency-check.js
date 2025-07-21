@@ -34,6 +34,12 @@ export default async function handler(req, res) {
 
     const { parent_id, message } = req.body;
 
+    console.log('=== Emergency Check Debug ===');
+    console.log('Child ID:', childId);
+    console.log('Request body:', req.body);
+    console.log('Parent ID:', parent_id);
+    console.log('Message:', message);
+
     if (!parent_id || !message) {
       return res.status(400).json({ error: 'Parent ID and message are required' });
     }

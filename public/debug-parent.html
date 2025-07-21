@@ -19,6 +19,7 @@
     
     <button onclick="checkAuth()">認証状態確認</button>
     <button onclick="checkEmergencies()">緊急確認チェック</button>
+    <button onclick="directDbCheck()">DB直接確認</button>
     <button onclick="clearStorage()">ストレージクリア</button>
     
     <div id="results"></div>
@@ -50,6 +51,15 @@
                 if (response.ok) {
                     const data = await response.json();
                     log('ログイン中: ' + data.user.name + ' (' + data.user.email + ')', 'success');
+                    log('ユーザーID: ' + data.user.id, 'info');
+                    
+                    // JWTトークンの中身も確認
+                    try {
+                        const payload = JSON.parse(atob(authToken.split('.')[1]));
+                        log('JWTのユーザーID: ' + payload.userId, 'info');
+                    } catch (e) {
+                        log('JWTデコードエラー', 'error');
+                    }
                 } else {
                     log('認証失敗: ' + response.status, 'error');
                 }
@@ -82,6 +92,23 @@
                 }
             } catch (error) {
                 log('緊急確認エラー: ' + error.message, 'error');
+            }
+        }
+        
+        async function directDbCheck() {
+            try {
+                const response = await fetch(`${API_BASE}/api/debug/check-emergency-requests`);
+                const data = await response.json();
+                
+                // 親ID 13の緊急確認を探す
+                const parent13 = data.select_result.data.filter(r => r.parent_id === 13 && r.status === 'pending');
+                log('DB内の親ID13未応答緊急確認: ' + parent13.length + '件', parent13.length > 0 ? 'success' : 'info');
+                
+                parent13.forEach(req => {
+                    log(`ID ${req.id}: requester ${req.requester_id} → parent ${req.parent_id}`, 'info');
+                });
+            } catch (error) {
+                log('DB確認エラー: ' + error.message, 'error');
             }
         }
         

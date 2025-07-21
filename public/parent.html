@@ -189,9 +189,30 @@
                 <div id="emergencyRequester" style="font-size: 16px; color: #666; margin-bottom: 15px;">
                     お子様から安否確認の依頼が届いています
                 </div>
-                <button onclick="respondToEmergency()" style="background: #f44336; color: white; padding: 15px 30px; font-size: 18px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                <button onclick="showResponseModal()" style="background: #f44336; color: white; padding: 15px 30px; font-size: 18px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
                     📡 安否報告する
                 </button>
+            </div>
+
+            <!-- 安否報告モーダル -->
+            <div id="responseModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+                <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 400px; width: 90%;">
+                    <div style="font-size: 24px; margin-bottom: 15px;">🚨</div>
+                    <div style="font-size: 20px; font-weight: bold; margin-bottom: 20px; color: #333;">
+                        安否状況をお知らせください
+                    </div>
+                    <div style="margin-bottom: 30px;">
+                        <button onclick="respondToEmergency('safe')" style="background: #4caf50; color: white; padding: 15px 25px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; margin: 0 10px; font-weight: bold;">
+                            ✅ 大丈夫です
+                        </button>
+                        <button onclick="respondToEmergency('need_help')" style="background: #f44336; color: white; padding: 15px 25px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; margin: 0 10px; font-weight: bold;">
+                            🆘 助けが必要です
+                        </button>
+                    </div>
+                    <button onclick="hideResponseModal()" style="background: #666; color: white; padding: 10px 20px; font-size: 14px; border: none; border-radius: 5px; cursor: pointer;">
+                        キャンセル
+                    </button>
+                </div>
             </div>
 
             <div class="status-card">
@@ -549,10 +570,30 @@
             document.getElementById('emergencyNotification').style.display = 'none';
         }
 
+        // 安否報告モーダル表示
+        function showResponseModal() {
+            const modal = document.getElementById('responseModal');
+            modal.style.display = 'flex';
+        }
+
+        // 安否報告モーダル非表示
+        function hideResponseModal() {
+            const modal = document.getElementById('responseModal');
+            modal.style.display = 'none';
+        }
+
         // 緊急確認に応答
-        async function respondToEmergency() {
+        async function respondToEmergency(responseType) {
             try {
-                addLog('📡 緊急確認に応答中...', 'info');
+                hideResponseModal();
+                
+                const responseMessages = {
+                    'safe': '大丈夫です',
+                    'need_help': '助けが必要です'
+                };
+                
+                const responseMessage = responseMessages[responseType] || '応答しました';
+                addLog(`📡 緊急確認に応答中: ${responseMessage}`, 'info');
                 
                 const response = await fetch(`${API_BASE}/api/emergency/respond`, {
                     method: 'POST',
@@ -561,14 +602,14 @@
                         'Authorization': `Bearer ${authToken}`
                     },
                     body: JSON.stringify({
-                        status: 'safe',
-                        message: '無事です',
+                        status: responseType,
+                        message: responseMessage,
                         timestamp: new Date().toISOString()
                     })
                 });
 
                 if (response.ok) {
-                    addLog('✅ 安否報告完了', 'success');
+                    addLog(`✅ 安否報告完了: ${responseMessage}`, 'success');
                     hideEmergencyNotification();
                     updateLastActivity();
                 } else {

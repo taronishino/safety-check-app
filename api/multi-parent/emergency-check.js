@@ -7,6 +7,13 @@ const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req, res) {
+  console.log('Emergency check function started');
+  console.log('Environment check:', {
+    hasSupabaseUrl: !!process.env.SUPABASE_URL,
+    hasSupabaseKey: !!process.env.SUPABASE_SERVICE_KEY,
+    hasJwtSecret: !!process.env.JWT_SECRET
+  });
+  
   // CORS設定
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -22,23 +29,63 @@ export default async function handler(req, res) {
   }
 
   try {
+    console.log('Processing POST request');
+    
+    // Environment variable check
+    if (!process.env.JWT_SECRET) {
+      console.error('JWT_SECRET environment variable is missing');
+      return res.status(500).json({ 
+        error: 'Server configuration error', 
+        debug: 'JWT_SECRET not configured' 
+      });
+    }
+    
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
+      console.error('Supabase environment variables missing');
+      return res.status(500).json({ 
+        error: 'Server configuration error', 
+        debug: 'Supabase configuration missing' 
+      });
+    }
+
     // JWT認証
     const authHeader = req.headers.authorization;
+    console.log('Auth header present:', !!authHeader);
+    
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('Invalid authorization header');
       return res.status(401).json({ error: 'No valid authorization header' });
     }
 
     const token = authHeader.substring(7);
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('Token extracted, length:', token.length);
+    
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log('JWT verification successful, userId:', decoded.userId);
+    } catch (jwtError) {
+      console.error('JWT verification failed:', jwtError);
+      return res.status(401).json({ 
+        error: 'Invalid token', 
+        debug: jwtError.message 
+      });
+    }
+    
     const childId = decoded.userId;
 
+    console.log('Request body:', req.body);
     const { parent_id, parent_name } = req.body;
 
     if (!parent_id) {
+      console.log('Missing parent_id in request body');
       return res.status(400).json({ error: 'Parent ID is required' });
     }
+    
+    console.log('Parent ID provided:', parent_id);
 
     // 権限チェック - 親子関係が存在するか確認
+    console.log('Checking relationship between parent:', parent_id, 'and child:', childId);
     const { data: relationship, error: relError } = await supabase
       .from('relationships')
       .select('*')
@@ -46,9 +93,20 @@ export default async function handler(req, res) {
       .eq('child_id', childId)
       .single();
 
-    if (relError || !relationship) {
+    if (relError) {
+      console.error('Relationship check error:', relError);
+      return res.status(403).json({ 
+        error: 'Relationship check failed', 
+        debug: relError.message 
+      });
+    }
+    
+    if (!relationship) {
+      console.log('No relationship found between parent and child');
       return res.status(403).json({ error: 'No relationship found' });
     }
+    
+    console.log('Relationship verified successfully');
 
     // 子供の情報を取得
     const { data: childUser, error: childError } = await supabase
@@ -62,15 +120,19 @@ export default async function handler(req, res) {
     }
 
     // 緊急確認依頼をデータベースに記録
+    console.log('Creating emergency request...');
+    const emergencyData = {
+      requester_id: childId,
+      parent_id: parent_id,
+      status: 'pending',
+      message: '緊急確認をお願いします',
+      created_at: new Date().toISOString()
+    };
+    console.log('Emergency request data:', emergencyData);
+    
     const { data: emergencyRequest, error: requestError } = await supabase
       .from('emergency_requests')
-      .insert({
-        requester_id: childId,
-        parent_id: parent_id,
-        status: 'pending',
-        message: '緊急確認をお願いします',
-        created_at: new Date().toISOString()
-      })
+      .insert(emergencyData)
       .select()
       .single();
 
@@ -114,13 +176,25 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error('Emergency check error:', error);
+    console.error('Emergency check error:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      cause: error.cause
+    });
     
     // JWTエラーの場合は401を返す
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
-      return res.status(401).json({ error: 'Invalid token' });
+      return res.status(401).json({ 
+        error: 'Invalid token',
+        debug: error.message 
+      });
     }
     
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ 
+      error: 'Internal server error',
+      debug: error.message,
+      name: error.name
+    });
   }
 }

@@ -220,7 +220,7 @@
                 <div id="lastActivity" style="font-size: 18px; text-align: center; color: #333; margin: 15px 0;">📅 取得中...</div>
             </div>
 
-            <button class="btn btn-success" onclick="sendActivity()" id="safetyReportBtn" style="display: none;">
+            <button class="btn btn-success" onclick="showSafetyReportModal()" id="safetyReportBtn" style="display: none;">
                 📡 安否報告 <span style="font-size: 12px; background: #ffd700; color: #000; padding: 2px 6px; border-radius: 4px; margin-left: 5px;">💎 プレミアムのみ</span>
             </button>
             
@@ -253,6 +253,33 @@
                 <button class="btn btn-secondary" onclick="hidePairingCode()" style="font-size: 14px;">
                     閉じる
                 </button>
+            </div>
+
+            <!-- 安否報告モーダル（プレミアム機能） -->
+            <div id="safetyReportModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+                <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 400px; width: 90%;">
+                    <div style="font-size: 24px; margin-bottom: 15px;">📡</div>
+                    <div style="font-size: 20px; font-weight: bold; margin-bottom: 10px; color: #333;">
+                        安否状況の報告
+                    </div>
+                    <div style="font-size: 14px; color: #666; margin-bottom: 25px;">
+                        お子様に状況をお知らせします
+                    </div>
+                    <div style="margin-bottom: 30px;">
+                        <button onclick="sendSafetyReport('fine')" style="background: #4caf50; color: white; padding: 12px 20px; font-size: 14px; border: none; border-radius: 8px; cursor: pointer; margin: 5px; font-weight: bold; display: block; width: 100%;">
+                            😊 元気です
+                        </button>
+                        <button onclick="sendSafetyReport('ok')" style="background: #2196f3; color: white; padding: 12px 20px; font-size: 14px; border: none; border-radius: 8px; cursor: pointer; margin: 5px; font-weight: bold; display: block; width: 100%;">
+                            👍 問題ないです
+                        </button>
+                        <button onclick="sendSafetyReport('need_help')" style="background: #f44336; color: white; padding: 12px 20px; font-size: 14px; border: none; border-radius: 8px; cursor: pointer; margin: 5px; font-weight: bold; display: block; width: 100%;">
+                            🆘 助けが必要
+                        </button>
+                    </div>
+                    <button onclick="hideSafetyReportModal()" style="background: #666; color: white; padding: 10px 20px; font-size: 14px; border: none; border-radius: 5px; cursor: pointer;">
+                        キャンセル
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -618,6 +645,57 @@
                 }
             } catch (error) {
                 addLog(`❌ 応答失敗: ${error.message}`, 'error');
+            }
+        }
+
+        // 安否報告モーダル表示
+        function showSafetyReportModal() {
+            const modal = document.getElementById('safetyReportModal');
+            modal.style.display = 'flex';
+        }
+
+        // 安否報告モーダル非表示
+        function hideSafetyReportModal() {
+            const modal = document.getElementById('safetyReportModal');
+            modal.style.display = 'none';
+        }
+
+        // 安否報告送信
+        async function sendSafetyReport(statusType) {
+            try {
+                hideSafetyReportModal();
+                
+                const statusMessages = {
+                    'fine': '元気です',
+                    'ok': '問題ないです',
+                    'need_help': '助けが必要'
+                };
+                
+                const statusMessage = statusMessages[statusType] || '報告しました';
+                addLog(`📡 安否報告送信中: ${statusMessage}`, 'info');
+                
+                const response = await fetch(`${API_BASE}/api/activity/send-report`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        status: statusType,
+                        message: statusMessage
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    addLog(`✅ 安否報告完了: ${statusMessage}`, 'success');
+                    updateLastActivity();
+                } else {
+                    const errorData = await response.json();
+                    addLog(`❌ 安否報告エラー: ${errorData.error}`, 'error');
+                }
+            } catch (error) {
+                addLog(`❌ 安否報告失敗: ${error.message}`, 'error');
             }
         }
 

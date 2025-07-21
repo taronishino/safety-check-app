@@ -1,0 +1,62 @@
+{
+  "packageId": "com.anpicheck.app",
+  "host": "safety-check-app.vercel.app",
+  "name": "安否チェック",
+  "launcherName": "安否チェック",
+  "display": "standalone",
+  "themeColor": "#4ECDC4",
+  "navigationColor": "#4ECDC4",
+  "backgroundColor": "#ffffff",
+  "enableNotifications": true,
+  "startUrl": "/index.html",
+  "iconUrl": "https://safety-check-app.vercel.app/icons/icon-512x512.png",
+  "maskableIconUrl": "https://safety-check-app.vercel.app/icons/icon-512x512.png",
+  "appVersion": "1.0.0",
+  "signingKey": {
+    "path": "./android-keystore.jks",
+    "alias": "android"
+  },
+  "appVersionCode": 1,
+  "shortcuts": [
+    {
+      "name": "親として使う",
+      "shortName": "親用",
+      "url": "/parent.html",
+      "icons": [
+        {
+          "src": "/icons/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "子として使う", 
+      "shortName": "子用",
+      "url": "/child.html",
+      "icons": [
+        {
+          "src": "/icons/icon-192x192.png", 
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://safety-check-app.vercel.app/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {
+    "locationDelegation": {
+      "enabled": true
+    },
+    "playBilling": {
+      "enabled": false
+    }
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "orientation": "default",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": [],
+  "appId": "com.anpicheck.app"
+}

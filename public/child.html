@@ -1165,10 +1165,10 @@
             const responseHtml = responses.map(response => {
                 const parentName = response.parent?.name || '親';
                 const responseText = response.parent_response === 'safe' ? 
-                    '✅ 大丈夫です' : 
+                    '✅ 大丈夫' : 
                     response.parent_response === 'need_help' ? 
-                    '🆘 助けが必要です' : 
-                    '📱 応答あり';
+                    '🆘 助けが必要' : 
+                    '📱 応答';
                 
                 const respondedTime = new Date(response.responded_at).toLocaleString('ja-JP', {
                     month: 'numeric',
@@ -1200,11 +1200,26 @@
         // 応答を既読にする
         async function clearResponses() {
             try {
-                // 応答を既読にするロジックは簡単に非表示にする
-                hideEmergencyResponses();
-                addLog('📱 応答を既読にしました', 'success');
+                addLog('📱 既読処理中...', 'info');
+                
+                const response = await fetch(`${API_BASE}/api/emergency/mark-read`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    hideEmergencyResponses();
+                    addLog(`📱 応答を既読にしました (${data.marked_read}件)`, 'success');
+                } else {
+                    const errorData = await response.json();
+                    addLog(`❌ 既読処理エラー: ${errorData.error}`, 'error');
+                }
             } catch (error) {
-                addLog('応答クリアエラー:', error);
+                addLog(`❌ 既読処理失敗: ${error.message}`, 'error');
             }
         }
 

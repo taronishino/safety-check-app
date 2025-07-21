@@ -2,8 +2,20 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>親用 - 安否チェックアプリ</title>
+    
+    <!-- PWA対応 -->
+    <link rel="manifest" href="/manifest-parent.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="安否親">
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+    <meta name="theme-color" content="#FF6B6B">
+    
+    <!-- スマホ最適化 -->
+    <meta name="format-detection" content="telephone=no">
+    <meta name="mobile-web-app-capable" content="yes">
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
@@ -173,6 +185,11 @@
             </div>
             <button class="btn btn-primary" onclick="login()">ログイン</button>
             <button class="btn btn-secondary" onclick="register()" style="margin-top: 10px;">新規登録</button>
+            
+            <!-- PWAインストールボタン -->
+            <button id="installButton" class="btn btn-success" style="display: none; margin-top: 10px; background: #4CAF50;">
+                📲 ホーム画面に追加
+            </button>
         </div>
 
         <!-- メイン画面 -->
@@ -265,6 +282,46 @@
         let lastActivityTime = new Date();
         let activityTimer = null;
         let isPageVisible = true;
+
+        // Service Worker登録
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful');
+                    })
+                    .catch(err => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+
+        // PWAインストール促進
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // インストールボタンを表示
+            const installButton = document.getElementById('installButton');
+            if (installButton) {
+                installButton.style.display = 'block';
+            }
+        });
+
+        // インストールボタンのクリックイベント
+        document.getElementById('installButton')?.addEventListener('click', () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted the install prompt');
+                        document.getElementById('installButton').style.display = 'none';
+                    }
+                    deferredPrompt = null;
+                });
+            }
+        });
 
         // 初期化
         if (authToken) {

@@ -1,0 +1,26 @@
+{
+  "name": "安否チェックアプリ - 親用",
+  "short_name": "安否親",
+  "description": "家族の安否を見守るアプリ（親用）",
+  "start_url": "/parent.html",
+  "display": "standalone",
+  "background_color": "#FF6B6B",
+  "theme_color": "#FF6B6B",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["lifestyle", "medical"],
+  "lang": "ja"
+}

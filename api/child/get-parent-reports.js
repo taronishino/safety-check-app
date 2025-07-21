@@ -58,8 +58,24 @@ export default async function handler(req, res) {
     const parentIds = relationships.map(rel => rel.parent_id);
     console.log('Found parent IDs:', parentIds);
 
+    // 子の最後の既読時刻を取得
+    const { data: lastReadMarker, error: readError } = await supabase
+      .from('activities')
+      .select('created_at')
+      .eq('user_id', childId)
+      .eq('type', 'parent_reports_read')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    let lastReadTime = null;
+    if (!readError && lastReadMarker) {
+      lastReadTime = lastReadMarker.created_at;
+      console.log('Last read time:', lastReadTime);
+    }
+
     // 親の安否報告を取得（最新10件）
-    const { data: reports, error: reportsError } = await supabase
+    let reportsQuery = supabase
       .from('activities')
       .select(`
         id,
@@ -75,6 +91,13 @@ export default async function handler(req, res) {
       .eq('type', 'safety_report')
       .order('created_at', { ascending: false })
       .limit(10);
+
+    // 既読時刻より新しいもののみ取得
+    if (lastReadTime) {
+      reportsQuery = reportsQuery.gt('created_at', lastReadTime);
+    }
+
+    const { data: reports, error: reportsError } = await reportsQuery;
 
     if (reportsError) {
       console.error('Reports fetch error:', reportsError);

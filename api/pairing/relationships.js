@@ -49,7 +49,7 @@ export default async function handler(req, res) {
       const parentIds = relationships.map(rel => rel.parent_id);
       const { data: parents, error: parentError } = await supabase
         .from('users')
-        .select('id, name, email, last_activity, battery_level, device_info')
+        .select('id, name, email')
         .in('id', parentIds);
       
       console.log('Parents query result:', { parents, parentError });
@@ -85,9 +85,9 @@ export default async function handler(req, res) {
       parent_email: rel.parent?.email || '',
       nickname: rel.nickname || rel.parent?.name || 'Parent',
       created_at: rel.created_at,
-      last_activity: rel.parent?.last_activity || new Date().toISOString(),
-      battery_level: rel.parent?.battery_level || null,
-      device_info: rel.parent?.device_info || 'unknown'
+      last_activity: null, // TODO: 後で活動テーブルから取得
+      battery_level: null,
+      device_info: 'unknown'
     }));
 
     res.status(200).json({

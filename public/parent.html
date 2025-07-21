@@ -224,6 +224,10 @@
                 📡 安否報告 <span style="font-size: 12px; background: #ffd700; color: #000; padding: 2px 6px; border-radius: 4px; margin-left: 5px;">💎 プレミアムのみ</span>
             </button>
             
+            <button class="btn btn-secondary" onclick="testParentData()" style="margin-top: 10px;">
+                🔍 デバッグテスト
+            </button>
+            
             <div id="upgradePrompt" style="display: none; background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 10px; text-align: center;">
                 <div style="color: #856404; margin-bottom: 10px;">
                     💎 手動安否報告はプレミアム機能です
@@ -706,6 +710,39 @@
 
         // 定期的に緊急確認をチェック（30秒ごと）
         setInterval(checkEmergencyRequests, 30000);
+
+        // デバッグテスト関数
+        async function testParentData() {
+            try {
+                addLog('🔍 親側データテスト実行中...', 'info');
+                
+                const response = await fetch(`${API_BASE}/api/debug/test-parent`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    console.log('親側デバッグ情報:', data);
+                    addLog('✅ デバッグテスト完了 - ブラウザのコンソールを確認', 'success');
+                    
+                    // 主要情報をログに表示
+                    const debugInfo = data.debug_info;
+                    addLog(`👤 親ID: ${debugInfo.parent_id}`, 'info');
+                    addLog(`👥 子関係数: ${debugInfo.relationships.length}`, 'info');
+                    if (debugInfo.children_data && debugInfo.children_data.children) {
+                        addLog(`👶 子ユーザー数: ${debugInfo.children_data.children.length}`, 'info');
+                        addLog(`💎 サブスクリプション数: ${debugInfo.children_data.subscriptions.length}`, 'info');
+                    }
+                } else {
+                    addLog(`❌ デバッグテストエラー: ${data.error}`, 'error');
+                    console.error('デバッグテストエラー:', data);
+                }
+            } catch (error) {
+                addLog(`❌ デバッグテスト失敗: ${error.message}`, 'error');
+                console.error('デバッグテスト失敗:', error);
+            }
+        }
 
     </script>
 </body>

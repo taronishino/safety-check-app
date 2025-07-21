@@ -68,6 +68,19 @@ export default async function handler(req, res) {
       return res.status(409).json({ error: 'Relationship already exists' });
     }
 
+    // 親が既に他の子とペアリングしているかチェック（1親:1子制限）
+    const { data: parentExistingRelation } = await supabase
+      .from('relationships')
+      .select('*')
+      .eq('parent_id', pairingCode.parent_id);
+
+    if (parentExistingRelation && parentExistingRelation.length > 0) {
+      return res.status(409).json({ 
+        error: 'Parent already paired with another child',
+        message: '親は1人の子とのみペアリングできます。既存のペアリングを解除してから再試行してください。'
+      });
+    }
+
     // 親子関係を作成
     const { data: relationship, error: relationError } = await supabase
       .from('relationships')

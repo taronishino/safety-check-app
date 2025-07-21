@@ -104,40 +104,23 @@ export default async function handler(req, res) {
       }
     }
 
-    // 重要: 手動安否報告は「すべての子」が条件を満たす必要がある
-    // 1. すべての子がプレミアムプランである
-    // 2. すべての子が手動安否報告を有効にしている
+    // シンプル化: 1親:1子なので、その1人の子の状態のみをチェック
+    // 注意: 既存データでは複数子がいる可能性があるため、最初の子のみを使用
+    const targetChildId = childIds[0]; // 最初（または唯一）の子
     
-    let allChildrenHavePremium = true;
-    let allChildrenHaveManualReportsEnabled = true;
+    // その子のプレミアムプラン状態をチェック
+    const childSub = subscriptions?.find(sub => sub.user_id === targetChildId);
+    const hasChildPremium = childSub && 
+      ((childSub.plan_type === 'premium' && childSub.status === 'active') ||
+       (childSub.trial_end && new Date(childSub.trial_end) > new Date()));
     
-    // プレミアムプラン要件チェック（すべての子が必要）
-    for (const childId of childIds) {
-      const childSub = subscriptions?.find(sub => sub.user_id === childId);
-      const hasChildPremium = childSub && 
-        ((childSub.plan_type === 'premium' && childSub.status === 'active') ||
-         (childSub.trial_end && new Date(childSub.trial_end) > new Date()));
-      
-      if (!hasChildPremium) {
-        allChildrenHavePremium = false;
-        break;
-      }
-    }
-    
-    // 手動安否報告設定チェック（すべての子が必要）
-    for (const childId of childIds) {
-      const childSetting = childSettings?.find(setting => setting.user_id === childId);
-      const isEnabled = childSetting ? childSetting.setting_value === 'enabled' : true; // デフォルトは有効
-      
-      if (!isEnabled) {
-        allChildrenHaveManualReportsEnabled = false;
-        break;
-      }
-    }
+    // その子の手動安否報告設定をチェック
+    const childSetting = childSettings?.find(setting => setting.user_id === targetChildId);
+    const isManualReportsEnabled = childSetting ? childSetting.setting_value === 'enabled' : true; // デフォルトは有効
 
-    const hasAccess = allChildrenHavePremium;
-    const canUseManualReports = hasAccess && allChildrenHaveManualReportsEnabled;
-    manualReportsEnabled = allChildrenHaveManualReportsEnabled;
+    const hasAccess = hasChildPremium;
+    const canUseManualReports = hasAccess && isManualReportsEnabled;
+    manualReportsEnabled = isManualReportsEnabled;
 
     // 機能利用可能性を返す
     res.status(200).json({

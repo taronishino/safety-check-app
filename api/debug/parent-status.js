@@ -74,37 +74,25 @@ export default async function handler(req, res) {
       }
     };
 
-    // 4. 最終判定（すべての子が条件を満たす必要）
+    // 4. 最終判定（1親:1子の新仕様）
     const childIds = relationships.map(rel => rel.child_id);
+    const targetChildId = childIds[0]; // 最初（メイン）の子のみを使用
     
-    let allChildrenHavePremium = true;
-    let allChildrenHaveManualReportsEnabled = true;
+    // メインの子のプレミアムプラン状態
+    const targetChildSub = childSubscriptions.find(s => s.user_id === targetChildId);
+    const hasChildPremium = targetChildSub && targetChildSub.plan_type === 'premium' && targetChildSub.status === 'active';
     
-    // すべての子がプレミアムプランかチェック
-    for (const childId of childIds) {
-      const childSub = childSubscriptions.find(s => s.user_id === childId);
-      const hasChildPremium = childSub && childSub.plan_type === 'premium' && childSub.status === 'active';
-      if (!hasChildPremium) {
-        allChildrenHavePremium = false;
-        break;
-      }
-    }
+    // メインの子の手動報告設定
+    const targetChildSetting = childSettings.find(s => s.user_id === targetChildId);
+    const isManualReportsEnabled = targetChildSetting ? targetChildSetting.setting_value === 'enabled' : true;
     
-    // すべての子が手動報告を有効にしているかチェック
-    for (const childId of childIds) {
-      const childSetting = childSettings.find(s => s.user_id === childId);
-      const isEnabled = childSetting ? childSetting.setting_value === 'enabled' : true;
-      if (!isEnabled) {
-        allChildrenHaveManualReportsEnabled = false;
-        break;
-      }
-    }
-    
-    debug.analysis.should_allow_manual_reports = allChildrenHavePremium && allChildrenHaveManualReportsEnabled;
-    debug.analysis.premium_access = allChildrenHavePremium;
-    debug.analysis.manual_reports_setting = allChildrenHaveManualReportsEnabled;
-    debug.analysis.all_children_premium = allChildrenHavePremium;
-    debug.analysis.all_children_manual_enabled = allChildrenHaveManualReportsEnabled;
+    debug.analysis.should_allow_manual_reports = hasChildPremium && isManualReportsEnabled;
+    debug.analysis.premium_access = hasChildPremium;
+    debug.analysis.manual_reports_setting = isManualReportsEnabled;
+    debug.analysis.target_child_id = targetChildId;
+    debug.analysis.target_child_premium = hasChildPremium;
+    debug.analysis.target_child_manual_enabled = isManualReportsEnabled;
+    debug.analysis.note = 'Using first child only (1-parent:1-child design)';
 
     res.status(200).json(debug);
 

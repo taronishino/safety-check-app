@@ -558,9 +558,10 @@
                             <div>
                                 <strong>${parent.nickname || parent.parent_name || 'Unknown'}</strong>
                             </div>
-                            <span class="status-badge status-${status.type}">
+                            <div style="color: ${status.color}; font-weight: bold; font-size: 14px;">
                                 ${status.text}
-                            </span>
+                                ${status.message ? `<br><span style="font-size: 12px; font-weight: normal;">${status.message}</span>` : ''}
+                            </div>
                         </div>
                         <div class="last-activity">
                             🔋 バッテリー: --% | 📱 最終スマホ操作: ${parent.last_activity ? new Date(parent.last_activity).toLocaleString('ja-JP', {
@@ -610,18 +611,58 @@
         }
 
         function getParentStatus(parent, setting) {
-            // 実際の状態判定ロジック（仮想的な実装）
             const now = new Date();
             const lastActivity = new Date(parent.last_activity || now);
-            const hoursSinceActivity = (now - lastActivity) / (1000 * 60 * 60);
-            const threshold = setting.threshold_hours || 24;
-
-            if (hoursSinceActivity < threshold * 0.5) {
-                return { type: 'safe', text: '✅ 安全' };
-            } else if (hoursSinceActivity < threshold) {
-                return { type: 'warning', text: '⚠️ 注意' };
+            const timeDiff = now - lastActivity;
+            
+            // 時間と分を計算
+            const totalMinutes = Math.floor(timeDiff / (1000 * 60));
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            const days = Math.floor(hours / 24);
+            const remainingHours = hours % 24;
+            
+            // 時間表示の生成
+            let timeText = '';
+            if (days > 0) {
+                timeText = `${days}日${remainingHours}時間${minutes}分`;
             } else {
-                return { type: 'danger', text: '🚨 要確認' };
+                timeText = `${hours}時間${minutes}分`;
+            }
+            
+            // 12時間 = 720分, 24時間 = 1440分, 36時間 = 2160分
+            if (totalMinutes <= 720) {
+                // 緑: ～12時間
+                return { 
+                    type: 'safe', 
+                    text: `🟢 最終操作から${timeText}`,
+                    color: '#28a745',
+                    message: ''
+                };
+            } else if (totalMinutes <= 1440) {
+                // 黄: 12～24時間
+                return { 
+                    type: 'attention', 
+                    text: `🟡 最終操作から${timeText}`,
+                    color: '#ffc107',
+                    message: 'しばらく操作がありません'
+                };
+            } else if (totalMinutes <= 2160) {
+                // オレンジ: 24～36時間
+                return { 
+                    type: 'caution', 
+                    text: `🟠 最終操作から${timeText}`,
+                    color: '#fd7e14',
+                    message: '長時間操作がありません'
+                };
+            } else {
+                // 赤: 36時間以上
+                return { 
+                    type: 'danger', 
+                    text: `🔴 最終操作から${timeText}`,
+                    color: '#dc3545',
+                    message: '緊急確認をお勧めします'
+                };
             }
         }
 
@@ -1367,14 +1408,14 @@
             }
         }
 
-        // 定期的な状況更新（30秒間隔）
+        // 定期的な状況更新（1分間隔）- 最終操作時間の表示を更新
         setInterval(() => {
             if (authToken && userInfo) {
-                loadParentsStatus();
+                loadParentsStatus(); // 親の状態を再読み込み（最終操作時間の表示が更新される）
                 checkEmergencyResponses(); // 緊急確認応答もチェック
                 checkParentReports(); // 親の安否報告もチェック
             }
-        }, 30000);
+        }, 60000); // 60秒 = 1分間隔
     </script>
 </body>
 </html>

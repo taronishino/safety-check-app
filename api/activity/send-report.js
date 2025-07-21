@@ -97,21 +97,35 @@ export default async function handler(req, res) {
 
     const reportMessage = message || statusMessages[status];
     
+    console.log('Inserting activity record:', {
+      user_id: parentId,
+      activity_type: 'safety_report',
+      last_activity_at: new Date().toISOString(),
+      device_info: 'parent-manual-report',
+      metadata: {
+        report_status: status,
+        message: reportMessage,
+        report_type: 'manual'
+      }
+    });
+
     const { data: activity, error: actError } = await supabase
       .from('activities')
       .insert({
         user_id: parentId,
         activity_type: 'safety_report',
         last_activity_at: new Date().toISOString(),
-        device_info: 'parent-manual-report',
-        metadata: {
+        device_info: `parent-manual-report-${status}`,
+        metadata: JSON.stringify({
           report_status: status,
           message: reportMessage,
           report_type: 'manual'
-        }
+        })
       })
       .select()
       .single();
+
+    console.log('Activity insert result:', { data: activity, error: actError });
 
     if (actError) {
       console.error('Activity insert error:', actError);

@@ -79,11 +79,12 @@ export default async function handler(req, res) {
 
     // データ整形と追加情報取得
     const formattedRelationships = await Promise.all(relationships.map(async (rel) => {
-      // 各親の最新アクティビティを取得
+      // 各親の最新アクティビティと現在のバッテリー情報を取得
       let lastActivity = null;
       let batteryLevel = null;
       let deviceInfo = 'unknown';
       
+      // 最新のアクティビティを取得
       const { data: latestActivity } = await supabase
         .from('activities')
         .select('*')
@@ -94,9 +95,29 @@ export default async function handler(req, res) {
         
       if (latestActivity) {
         lastActivity = latestActivity.created_at;
-        batteryLevel = latestActivity.metadata?.battery_level || null;
         deviceInfo = latestActivity.device_info || 'unknown';
       }
+      
+      // usersテーブルから現在のバッテリー情報を取得
+      const { data: userInfo } = await supabase
+        .from('users')
+        .select('battery_level, last_activity')
+        .eq('id', rel.parent_id)
+        .single();
+        
+      if (userInfo) {
+        batteryLevel = userInfo.battery_level;
+        // アクティビティがない場合はusersテーブルのlast_activityを使用
+        if (!lastActivity && userInfo.last_activity) {
+          lastActivity = userInfo.last_activity;
+        }
+      }
+      
+      console.log(`Parent ${rel.parent_id} info:`, {
+        battery_level: batteryLevel,
+        last_activity: lastActivity,
+        device_info: deviceInfo
+      });
       
       return {
         id: rel.id,

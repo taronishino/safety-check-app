@@ -1289,12 +1289,14 @@
             
             responseList.innerHTML = responseHtml;
             
-            // 最新の応答者名を取得してログに表示
-            const latestResponse = responses[0];
-            if (latestResponse) {
-                const latestParentData = parentsData.find(p => p.parent_id === latestResponse.parent_id);
-                const latestParentName = latestParentData?.nickname || latestResponse.parent?.name || '親';
-                addLog(`📱 ${latestParentName}から緊急確認返信を${responses.length}件受信しました`, 'info');
+            // 全ての応答者名を取得してログに表示
+            const responderNames = responses.map(response => {
+                const parentData = parentsData.find(p => p.parent_id === response.parent_id);
+                return parentData?.nickname || response.parent?.name || '親';
+            });
+            
+            if (responderNames.length > 0) {
+                addLog(`📱 緊急確認返信を受信: ${responderNames.join('、')}から計${responses.length}件`, 'info');
             } else {
                 addLog(`📱 緊急確認返信を${responses.length}件受信しました`, 'info');
             }

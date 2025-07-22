@@ -36,7 +36,7 @@ export default async function handler(req, res) {
 
     console.log('Checking emergency responses for child:', childId);
 
-    // 子供が送信した緊急確認依頼の最新の応答を取得（1件のみ）
+    // 子供が送信した緊急確認依頼の全ての未読応答を取得
     // read_atカラムが存在しない場合は一時的に全ての応答を取得
     let query = supabase
       .from('emergency_requests')
@@ -47,8 +47,7 @@ export default async function handler(req, res) {
       .eq('requester_id', childId)
       .eq('status', 'responded')
       .gte('responded_at', new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()) // 2時間以内
-      .order('responded_at', { ascending: false })
-      .limit(1);
+      .order('responded_at', { ascending: false });
 
     // read_atカラムが存在する場合のみ未読フィルタを適用
     try {

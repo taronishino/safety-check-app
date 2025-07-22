@@ -77,17 +77,38 @@ export default async function handler(req, res) {
     console.log('Raw relationships data:', relationships);
     console.log('Relationships count:', relationships?.length || 0);
 
-    // データ整形
-    const formattedRelationships = relationships.map(rel => ({
-      id: rel.id,
-      parent_id: rel.parent_id,
-      parent_name: rel.parent?.name || 'Unknown',
-      parent_email: rel.parent?.email || '',
-      nickname: rel.nickname || rel.parent?.name || 'Parent',
-      created_at: rel.created_at,
-      last_activity: null, // TODO: 後で活動テーブルから取得
-      battery_level: null,
-      device_info: 'unknown'
+    // データ整形と追加情報取得
+    const formattedRelationships = await Promise.all(relationships.map(async (rel) => {
+      // 各親の最新アクティビティを取得
+      let lastActivity = null;
+      let batteryLevel = null;
+      let deviceInfo = 'unknown';
+      
+      const { data: latestActivity } = await supabase
+        .from('activities')
+        .select('*')
+        .eq('user_id', rel.parent_id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+        
+      if (latestActivity) {
+        lastActivity = latestActivity.created_at;
+        batteryLevel = latestActivity.metadata?.battery_level || null;
+        deviceInfo = latestActivity.device_info || 'unknown';
+      }
+      
+      return {
+        id: rel.id,
+        parent_id: rel.parent_id,
+        parent_name: rel.parent?.name || 'Unknown',
+        parent_email: rel.parent?.email || '',
+        nickname: rel.nickname || rel.parent?.name || 'Parent',
+        created_at: rel.created_at,
+        last_activity: lastActivity,
+        battery_level: batteryLevel,
+        device_info: deviceInfo
+      };
     }));
 
     res.status(200).json({

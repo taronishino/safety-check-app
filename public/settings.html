@@ -389,15 +389,20 @@
                 const data = await response.json();
 
                 if (response.ok) {
+                    console.log('Plan downgrade response:', data);
                     alert('無料プランに変更されました。\\n位置情報、緊急確認機能が制限されます。');
                     
-                    // 設定画面の表示を更新
-                    await loadSettings();
+                    // キャッシュをクリアして強制リロード
+                    if ('caches' in window) {
+                        caches.keys().then(names => {
+                            names.forEach(name => caches.delete(name));
+                        });
+                    }
                     
-                    // 少し待ってからメイン画面にリダイレクト
+                    // 少し待ってから強制リロード
                     setTimeout(() => {
-                        window.location.href = 'child.html?refresh=1';
-                    }, 1000);
+                        window.location.reload(true);
+                    }, 500);
                 } else {
                     alert(`プラン変更エラー: ${data.error}`);
                 }

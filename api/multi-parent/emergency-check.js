@@ -136,11 +136,12 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Emergency check error:', error);
+    console.error('Stack trace:', error.stack);
     
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
       return res.status(401).json({ error: 'Invalid token' });
     }
     
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error', debug: error.message });
   }
 }

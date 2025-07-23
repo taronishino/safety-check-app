@@ -811,7 +811,7 @@
                         return;
                     } else if (errorData.error === 'Location not available') {
                         addLog(`⚠️ 位置情報がまだ取得されていません`, 'error');
-                        alert(`${parentName}の位置情報がまだ取得されていません。\n${parentName}のアプリで位置情報の共有を有効にしてください。`);
+                        alert(`${parentName}の位置情報がまだ取得されていません。\n親アプリで位置情報の共有を有効にしてください。`);
                         return;
                     } else {
                         addLog(`⚠️ 位置情報取得エラー: ${errorData.error}`, 'error');
@@ -826,8 +826,8 @@
             }
 
             // 位置情報を表示
-            const parentData = parentsData.find(p => p.parent_id === parentId);
-            const parentName = parentData?.nickname || parentData?.parent_name || '親';
+            const parentName = parentsData.find(p => p.parent_id === parentId)?.nickname || 
+                              parentsData.find(p => p.parent_id === parentId)?.parent_name || '親';
             
             alert(`📍 ${parentName}の現在位置
 

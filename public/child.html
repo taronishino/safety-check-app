@@ -995,6 +995,20 @@
 
         // プランアップグレード
         async function upgradePlan() {
+            const subscription = await getSubscriptionStatus();
+            
+            // 既に無料体験中の場合は課金ページへ
+            if (subscription && subscription.is_trial_active) {
+                if (!confirm('無料体験期間中です。\n今すぐ有料プランに切り替えますか？\n\n月額980円（税込）')) {
+                    return;
+                }
+                
+                // Stripeチェックアウトへリダイレクト
+                await redirectToCheckout();
+                return;
+            }
+            
+            // 新規の場合は7日間無料体験を開始
             if (!confirm('プレミアムプランにアップグレードしますか？\n7日間無料体験後、月額980円で全機能がご利用いただけます。')) {
                 return;
             }
@@ -1023,6 +1037,50 @@
             } catch (error) {
                 addLog(`❌ アップグレード失敗: ${error.message}`, 'error');
             }
+        }
+        
+        // Stripeチェックアウトへリダイレクト
+        async function redirectToCheckout() {
+            try {
+                addLog('💳 決済ページへ移動中...', 'info');
+                
+                const response = await fetch(`${API_BASE}/api/subscription/create-checkout`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.checkout_url) {
+                    // Stripeチェックアウトページへリダイレクト
+                    window.location.href = data.checkout_url;
+                } else {
+                    addLog(`❌ 決済ページの作成に失敗しました: ${data.error}`, 'error');
+                    alert('決済ページの作成に失敗しました。しばらく時間をおいてから再度お試しください。');
+                }
+            } catch (error) {
+                addLog(`❌ 決済エラー: ${error.message}`, 'error');
+                alert('決済処理でエラーが発生しました。');
+            }
+        }
+        
+        // 現在のサブスクリプション状態を取得
+        async function getSubscriptionStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/api/subscription/status`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.subscription;
+                }
+            } catch (error) {
+                console.error('Subscription status error:', error);
+            }
+            return null;
         }
 
         // プランダウングレード

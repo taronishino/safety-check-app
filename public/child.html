@@ -732,8 +732,8 @@
         async function sendEmergencyCheck(parentId) {
             try {
                 // 親の名前を取得
-                const parentName = parentsData.find(p => p.parent_id === parentId)?.nickname || 
-                                  parentsData.find(p => p.parent_id === parentId)?.parent_name || '親';
+                const parentData = parentsData.find(p => p.parent_id === parentId);
+                const parentName = parentData?.nickname || parentData?.parent_name || '親';
                 
                 addLog(`🚨 ${parentName}に緊急確認を送信中...`, 'info');
                 
@@ -819,8 +819,8 @@
                     }
                 }
             } catch (error) {
-                const parentName = parentsData.find(p => p.parent_id === parentId)?.nickname || 
-                                  parentsData.find(p => p.parent_id === parentId)?.parent_name || '親';
+                const parentData = parentsData.find(p => p.parent_id === parentId);
+                const parentName = parentData?.nickname || parentData?.parent_name || '親';
                 addLog(`❌ 位置情報取得失敗: ${error.message}`, 'error');
                 return;
             }

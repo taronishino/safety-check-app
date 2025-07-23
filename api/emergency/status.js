@@ -62,20 +62,35 @@ export default async function handler(req, res) {
 
     const hasPendingRequests = emergencyRequests && emergencyRequests.length > 0;
     
-    // 依頼者の名前を取得
+    // 依頼者の名前（ニックネーム優先）を取得
     let requesterName = null;
     if (hasPendingRequests) {
       const requesterId = emergencyRequests[0].requester_id;
-      console.log('Getting requester name for ID:', requesterId);
+      console.log('Getting requester name for ID:', requesterId, 'Parent ID:', parentId);
       
-      const { data: requester, error: requesterError } = await supabase
-        .from('users')
-        .select('name')
-        .eq('id', requesterId)
+      // relationshipsテーブルからニックネームを取得
+      const { data: relationship, error: relError } = await supabase
+        .from('relationships')
+        .select('nickname')
+        .eq('parent_id', parentId)
+        .eq('child_id', requesterId)
         .single();
         
-      console.log('Requester query result:', { requester, requesterError });
-      requesterName = requester?.name || 'Unknown';
+      console.log('Relationship query result:', { relationship, relError });
+      
+      if (relationship?.nickname) {
+        requesterName = relationship.nickname;
+      } else {
+        // ニックネームがない場合はusersテーブルから名前を取得
+        const { data: requester, error: requesterError } = await supabase
+          .from('users')
+          .select('name')
+          .eq('id', requesterId)
+          .single();
+          
+        console.log('Requester query result:', { requester, requesterError });
+        requesterName = requester?.name || 'Unknown';
+      }
     }
 
     const response = {

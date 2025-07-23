@@ -810,8 +810,17 @@
         }
 
 
-        // 定期的に緊急確認をチェック（30秒ごと）
-        setInterval(checkEmergencyRequests, 30000);
+        // 定期的に緊急確認をチェック（10秒ごと）
+        setInterval(checkEmergencyRequests, 10000);
+        
+        // 初期読み込み時とページフォーカス時にもチェック
+        checkEmergencyRequests(); // 初回実行
+        window.addEventListener('focus', checkEmergencyRequests); // ページフォーカス時
+        window.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                checkEmergencyRequests(); // ページが見える状態になった時
+            }
+        });
 
 
         // デバッグテスト関数

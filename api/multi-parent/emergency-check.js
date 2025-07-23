@@ -79,6 +79,14 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: 'No relationship found' });
     }
 
+    // 同じ親への古いpending依頼をクリーンアップ
+    console.log('Cleaning up old pending requests for parent:', parent_id);
+    await supabase
+      .from('emergency_requests')
+      .update({ status: 'expired' })
+      .eq('parent_id', parent_id)
+      .eq('status', 'pending');
+
     // 緊急確認を記録（emergency_requestsテーブル使用）
     console.log('Inserting emergency request:', {
       requester_id: childId,

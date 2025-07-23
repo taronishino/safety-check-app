@@ -39,6 +39,13 @@ export default async function handler(req, res) {
     console.log('Parent ID from JWT:', parentId);
     console.log('Parent email from JWT:', decoded.email);
     
+    // 全ての pending 緊急確認を確認（デバッグ用）
+    const { data: allPending } = await supabase
+      .from('emergency_requests')
+      .select('*')
+      .eq('status', 'pending');
+    console.log('All pending requests in DB:', allPending);
+    
     // シンプルなクエリで確実に取得
     const { data: emergencyRequests, error } = await supabase
       .from('emergency_requests')

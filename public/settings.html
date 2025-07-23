@@ -392,17 +392,8 @@
                     console.log('Plan downgrade response:', data);
                     alert('無料プランに変更されました。\\n位置情報、緊急確認機能が制限されます。');
                     
-                    // キャッシュをクリアして強制リロード
-                    if ('caches' in window) {
-                        caches.keys().then(names => {
-                            names.forEach(name => caches.delete(name));
-                        });
-                    }
-                    
-                    // 少し待ってから強制リロード
-                    setTimeout(() => {
-                        window.location.reload(true);
-                    }, 500);
+                    // 直接メイン画面に戻る（設定画面の更新は諦める）
+                    window.location.href = 'child.html?refresh=1';
                 } else {
                     alert(`プラン変更エラー: ${data.error}`);
                 }

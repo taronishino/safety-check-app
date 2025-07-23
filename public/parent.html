@@ -714,22 +714,31 @@
         // 緊急確認依頼をチェック
         async function checkEmergencyRequests() {
             try {
+                console.log('🔍 緊急確認をチェック中...', new Date().toLocaleTimeString());
                 const response = await fetch(`${API_BASE}/api/emergency/status`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
 
                 if (response.ok) {
                     const data = await response.json();
+                    console.log('📋 緊急確認状態:', data);
+                    
                     if (data.has_pending_requests) {
+                        console.log('🚨 緊急確認依頼あり:', data.requester_name, '件数:', data.pending_count);
                         showEmergencyNotification(data.requester_name || 'お子様');
+                        addLog(`🚨 緊急確認依頼を検出: ${data.requester_name || 'お子様'}から${data.pending_count}件`, 'warning');
                     } else {
+                        console.log('✅ 緊急確認依頼なし');
                         hideEmergencyNotification();
                     }
                 } else {
-                    console.log('緊急確認状態の取得に失敗:', response.status);
+                    const errorText = await response.text();
+                    console.log('❌ 緊急確認状態の取得に失敗:', response.status, errorText);
+                    addLog(`❌ 緊急確認チェック失敗: ${response.status}`, 'error');
                 }
             } catch (error) {
-                console.log('緊急確認チェックエラー:', error);
+                console.log('❌ 緊急確認チェックエラー:', error);
+                addLog(`❌ 緊急確認チェックエラー: ${error.message}`, 'error');
             }
         }
 

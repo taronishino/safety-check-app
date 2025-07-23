@@ -119,54 +119,8 @@ export default async function handler(req, res) {
       .eq('id', childId)
       .single();
 
-    // プッシュ通知を送信
-    try {
-      const { data: subscriptions } = await supabase
-        .from('push_subscriptions')
-        .select('*')
-        .eq('user_id', parent_id);
-
-      if (subscriptions && subscriptions.length > 0) {
-        const webPush = await import('web-push');
-        
-        // VAPID設定
-        webPush.default.setVapidDetails(
-          'mailto:your-email@example.com',
-          process.env.VAPID_PUBLIC_KEY,
-          process.env.VAPID_PRIVATE_KEY
-        );
-
-        const notificationPayload = JSON.stringify({
-          title: '🚨 緊急確認',
-          body: `${childData?.name || '子'}から緊急確認が届きました。`,
-          icon: '/icons/icon-192x192.png',
-          badge: '/icons/badge-72x72.png',
-          data: {
-            type: 'emergency_check',
-            emergency_id: emergencyCheck.id,
-            requester_id: childId,
-            url: '/parent.html'
-          }
-        });
-
-        // 全てのサブスクリプションに通知を送信
-        const notifications = subscriptions.map(subscription => {
-          return webPush.default.sendNotification({
-            endpoint: subscription.endpoint,
-            keys: {
-              p256dh: subscription.p256dh_key,
-              auth: subscription.auth_key
-            }
-          }, notificationPayload);
-        });
-
-        await Promise.all(notifications);
-        console.log('Push notifications sent successfully');
-      }
-    } catch (notificationError) {
-      console.error('Push notification error:', notificationError);
-      // 通知エラーでも緊急確認は記録されているので処理を続行
-    }
+    // プッシュ通知は将来の実装として、現在は親アプリでのポーリングに依存
+    console.log(`Emergency check created: ID ${emergencyCheck.id} from child ${childId} to parent ${parent_id}`);
 
     res.status(200).json({
       success: true,

@@ -173,6 +173,14 @@
     <div class="container">
         <h1>👴👵 親用 - 安否チェック</h1>
         
+        <!-- デバッグ情報表示エリア（スマホ用） -->
+        <div id="debugInfo" style="background: #e3f2fd; border: 1px solid #2196f3; padding: 10px; margin: 10px 0; font-size: 11px; border-radius: 5px;">
+            <strong>🔧 デバッグ状況:</strong>
+            <div id="debugContent">読み込み中...</div>
+            <button onclick="toggleDebugDetail()" style="margin-top: 5px; font-size: 10px; padding: 2px 8px;">詳細表示</button>
+        </div>
+        <div id="debugDetail" style="display: none; background: #f5f5f5; border: 1px solid #ccc; padding: 8px; margin: 5px 0; font-size: 10px; border-radius: 3px; max-height: 200px; overflow-y: auto;"></div>
+        
         <!-- ログイン画面 -->
         <div id="loginSection">
             <div class="input-group">
@@ -711,32 +719,52 @@
             addLog('ℹ️ ペアリングコードを閉じました', 'info');
         }
 
+        // デバッグ情報をスマホ画面に表示
+        function updateDebugInfo(message, isError = false) {
+            const debugContent = document.getElementById('debugContent');
+            const debugDetail = document.getElementById('debugDetail');
+            const time = new Date().toLocaleTimeString();
+            
+            debugContent.innerHTML = `${time}: ${message}`;
+            if (isError) {
+                debugContent.style.color = 'red';
+            } else {
+                debugContent.style.color = 'green';
+            }
+            
+            // 詳細ログに追加
+            debugDetail.innerHTML = `${time}: ${message}<br>` + debugDetail.innerHTML;
+        }
+
+        function toggleDebugDetail() {
+            const detail = document.getElementById('debugDetail');
+            detail.style.display = detail.style.display === 'none' ? 'block' : 'none';
+        }
+
         // 緊急確認依頼をチェック
         async function checkEmergencyRequests() {
             try {
-                console.log('🔍 緊急確認をチェック中...', new Date().toLocaleTimeString());
-                console.log('📡 API_BASE:', API_BASE);
-                console.log('🔑 authToken available:', !!authToken, authToken ? `長さ: ${authToken.length}` : '');
+                updateDebugInfo('🔍 緊急確認をチェック中...');
                 
                 if (!authToken) {
-                    console.log('❌ 認証トークンがありません');
+                    updateDebugInfo('❌ 認証トークンがありません', true);
                     addLog('❌ 認証トークンがありません - ログインしてください', 'error');
                     return;
                 }
+                
+                updateDebugInfo(`🔑 認証OK (${authToken.length}文字)`);
                 
                 const response = await fetch(`${API_BASE}/api/emergency/status`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
 
-                console.log('📡 API Response status:', response.status);
-                console.log('📡 API Response headers:', Object.fromEntries(response.headers.entries()));
+                updateDebugInfo(`📡 API応答: ${response.status}`);
 
                 if (response.ok) {
                     const data = await response.json();
-                    console.log('📋 緊急確認状態 (詳細):', JSON.stringify(data, null, 2));
                     
                     if (data.has_pending_requests) {
-                        console.log('🚨 緊急確認依頼あり:', data.requester_name, '件数:', data.pending_count);
+                        updateDebugInfo(`🚨 緊急確認依頼あり: ${data.requester_name} (${data.pending_count}件)`);
                         showEmergencyNotification(data.requester_name || 'お子様');
                         addLog(`🚨 緊急確認依頼を検出: ${data.requester_name || 'お子様'}から${data.pending_count}件`, 'warning');
                         
@@ -745,20 +773,20 @@
                             const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBT2S2fLNeSsFJHfH8N+QQQsWX7Pp7KlWFAlJpeL2wHAiAz+M3+q5byMDOYvZ+ch+KgMzhdnhxW8iAzuL2PjIgC4FJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBUCl6O+wZRoGMo3X6s5+KQUzhdnhxW8iA0eKysysYiYFKXHL3dR9JwUxjdjtzXkrBSd4yfDijEYOG3fD2d6bRwsYbLnf36xaGAhNouPmwHAiA0eKysysYiYFKXHL3dR9JwUyjtbz0HcnBSN9xvLKfiwFJoTZ9bljNAQjfcjhynohAzWQ3dqlWBgLV7Dp46VRFglKkdvsw2smBS6J2NfMfCUDKYHa6MJxJQU0k9Pzy3QtAyeI29XNeCUFKYHa6MJxJQU2l9z5xHEjAzCD2dyoVxcJTaHl/q5cFQpHjeHku2EdBTuO3Lxo'); 
                             audio.play().catch(() => {}); // エラーは無視
                         } catch (e) {
-                            console.log('音の再生に失敗:', e);
+                            updateDebugInfo('音の再生に失敗', true);
                         }
                         
                     } else {
-                        console.log('✅ 緊急確認依頼なし');
+                        updateDebugInfo('✅ 緊急確認依頼なし');
                         hideEmergencyNotification();
                     }
                 } else {
                     const errorText = await response.text();
-                    console.log('❌ 緊急確認状態の取得に失敗:', response.status, errorText);
+                    updateDebugInfo(`❌ API失敗: ${response.status} - ${errorText}`, true);
                     addLog(`❌ 緊急確認チェック失敗: ${response.status} - ${errorText}`, 'error');
                 }
             } catch (error) {
-                console.log('❌ 緊急確認チェックエラー:', error);
+                updateDebugInfo(`❌ エラー: ${error.message}`, true);
                 addLog(`❌ 緊急確認チェックエラー: ${error.message}`, 'error');
             }
         }

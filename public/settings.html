@@ -387,7 +387,14 @@
 
                 if (response.ok) {
                     alert('無料プランに変更されました。\\n位置情報、緊急確認機能が制限されます。');
-                    window.location.href = 'child.html?refresh=1'; // メイン画面に戻る
+                    
+                    // 設定画面の表示を更新
+                    await loadSubscriptionStatus();
+                    
+                    // 少し待ってからメイン画面にリダイレクト
+                    setTimeout(() => {
+                        window.location.href = 'child.html?refresh=1';
+                    }, 1000);
                 } else {
                     alert(`プラン変更エラー: ${data.error}`);
                 }

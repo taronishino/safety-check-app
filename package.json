@@ -29,5 +29,8 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/taronishino/safety-check-app.git"
+  },
+  "engines": {
+    "node": "18.x"
   }
 }

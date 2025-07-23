@@ -42,14 +42,16 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Status is required' });
     }
 
-    // まず、該当する pending の緊急確認依頼を確認
+    // 最新の pending 緊急確認依頼を取得
     const { data: pendingRequests, error: checkError } = await supabase
       .from('emergency_requests')
       .select('*')
       .eq('parent_id', parentId)
-      .eq('status', 'pending');
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+      .limit(1);
 
-    console.log('Pending requests check:', { pendingRequests, checkError });
+    console.log('Latest pending request check:', { pendingRequests, checkError });
 
     if (checkError) {
       console.error('Pending requests check failed:', checkError);
@@ -61,7 +63,10 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'No pending emergency requests found' });
     }
 
-    // 該当する未応答の緊急確認依頼を完了状態に更新
+    const latestRequest = pendingRequests[0];
+    console.log('Responding to request ID:', latestRequest.id);
+
+    // 特定の最新緊急確認依頼を完了状態に更新
     const { data: updatedRequests, error: updateError } = await supabase
       .from('emergency_requests')
       .update({
@@ -70,7 +75,7 @@ export default async function handler(req, res) {
         response_message: message || '無事です',
         responded_at: timestamp || new Date().toISOString()
       })
-      .eq('parent_id', parentId)
+      .eq('id', latestRequest.id)
       .eq('status', 'pending')
       .select();
 

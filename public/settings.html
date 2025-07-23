@@ -233,9 +233,12 @@
         // 設定を読み込み
         async function loadSettings() {
             try {
-                // プラン状況を確認
-                const response = await fetch(`${API_BASE}/api/subscription/status`, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
+                // プラン状況を確認（キャッシュバスティング付き）
+                const response = await fetch(`${API_BASE}/api/subscription/status?t=${Date.now()}`, {
+                    headers: { 
+                        'Authorization': `Bearer ${authToken}`,
+                        'Cache-Control': 'no-cache'
+                    }
                 });
 
                 if (response.ok) {
@@ -389,7 +392,7 @@
                     alert('無料プランに変更されました。\\n位置情報、緊急確認機能が制限されます。');
                     
                     // 設定画面の表示を更新
-                    await loadSubscriptionStatus();
+                    await loadSettings();
                     
                     // 少し待ってからメイン画面にリダイレクト
                     setTimeout(() => {

@@ -34,8 +34,31 @@ export default async function handler(req, res) {
 
     const { status, message, timestamp } = req.body;
 
+    console.log('=== Emergency Response Debug ===');
+    console.log('Parent ID:', parentId);
+    console.log('Request body:', { status, message, timestamp });
+
     if (!status) {
       return res.status(400).json({ error: 'Status is required' });
+    }
+
+    // まず、該当する pending の緊急確認依頼を確認
+    const { data: pendingRequests, error: checkError } = await supabase
+      .from('emergency_requests')
+      .select('*')
+      .eq('parent_id', parentId)
+      .eq('status', 'pending');
+
+    console.log('Pending requests check:', { pendingRequests, checkError });
+
+    if (checkError) {
+      console.error('Pending requests check failed:', checkError);
+      return res.status(500).json({ error: 'Failed to check pending requests' });
+    }
+
+    if (!pendingRequests || pendingRequests.length === 0) {
+      console.log('No pending requests found for parent_id:', parentId);
+      return res.status(404).json({ error: 'No pending emergency requests found' });
     }
 
     // 該当する未応答の緊急確認依頼を完了状態に更新
@@ -50,6 +73,8 @@ export default async function handler(req, res) {
       .eq('parent_id', parentId)
       .eq('status', 'pending')
       .select();
+
+    console.log('Update result:', { updatedRequests, updateError });
 
     if (updateError) {
       console.error('Emergency response update error:', {

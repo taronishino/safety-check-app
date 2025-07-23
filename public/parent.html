@@ -831,6 +831,15 @@
                 
                 const responseMessage = responseMessages[responseType] || '応答しました';
                 addLog(`📡 緊急確認返信送信中: ${responseMessage}`, 'info');
+                updateDebugInfo(`📡 返信送信中: ${responseMessage}`);
+                
+                const requestBody = {
+                    status: responseType,
+                    message: responseMessage,
+                    timestamp: new Date().toISOString()
+                };
+                
+                console.log('Sending emergency response:', requestBody);
                 
                 const response = await fetch(`${API_BASE}/api/emergency/respond`, {
                     method: 'POST',
@@ -838,20 +847,23 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${authToken}`
                     },
-                    body: JSON.stringify({
-                        status: responseType,
-                        message: responseMessage,
-                        timestamp: new Date().toISOString()
-                    })
+                    body: JSON.stringify(requestBody)
                 });
 
+                console.log('Response status:', response.status);
+                
                 if (response.ok) {
+                    const data = await response.json();
+                    console.log('Response data:', data);
                     addLog(`✅ 緊急確認返信完了: ${responseMessage}`, 'success');
+                    updateDebugInfo(`✅ 返信完了: ${responseMessage}`);
                     hideEmergencyNotification();
                     updateLastActivity();
                 } else {
                     const data = await response.json();
+                    console.error('Response error:', data);
                     addLog(`❌ 応答エラー: ${data.error}`, 'error');
+                    updateDebugInfo(`❌ 返信エラー: ${data.error}`, true);
                 }
             } catch (error) {
                 addLog(`❌ 応答失敗: ${error.message}`, 'error');

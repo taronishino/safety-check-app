@@ -126,3 +126,22 @@ ON CONFLICT (user_id, setting_name) DO NOTHING;
 INSERT INTO user_settings (user_id, setting_name, setting_value)
 SELECT id, 'emergency_checks', 'enabled' FROM users
 ON CONFLICT (user_id, setting_name) DO NOTHING;
+
+-- 緊急確認依頼テーブル
+CREATE TABLE IF NOT EXISTS emergency_requests (
+    id SERIAL PRIMARY KEY,
+    requester_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    parent_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'responded', 'expired')),
+    message TEXT,
+    parent_response VARCHAR(20) CHECK (parent_response IN ('safe', 'need_help', 'no_response')),
+    response_message TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    responded_at TIMESTAMP,
+    expires_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL '24 hours')
+);
+
+-- インデックス作成
+CREATE INDEX IF NOT EXISTS idx_emergency_requests_parent_status ON emergency_requests(parent_id, status);
+CREATE INDEX IF NOT EXISTS idx_emergency_requests_created_at ON emergency_requests(created_at);
+CREATE INDEX IF NOT EXISTS idx_emergency_requests_expires_at ON emergency_requests(expires_at);

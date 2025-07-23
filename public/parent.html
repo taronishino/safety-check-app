@@ -606,6 +606,9 @@
             try {
                 addLog('📡 安否報告送信中...', 'info');
                 
+                // 位置情報とバッテリー情報を取得
+                const { location, battery } = await getLocationAndBattery();
+                
                 const response = await fetch(`${API_BASE}/api/activity`, {
                     method: 'POST',
                     headers: {
@@ -614,7 +617,11 @@
                     },
                     body: JSON.stringify({
                         last_activity_at: new Date().toISOString(),
-                        device_info: 'parent-app'
+                        device_info: 'parent-app-manual',
+                        location_lat: location?.lat,
+                        location_lng: location?.lng,
+                        location_address: location?.address,
+                        battery_level: battery
                     })
                 });
 

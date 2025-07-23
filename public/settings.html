@@ -387,7 +387,7 @@
 
                 if (response.ok) {
                     alert('無料プランに変更されました。\\n位置情報、緊急確認機能が制限されます。');
-                    window.location.href = 'child.html'; // メイン画面に戻る
+                    window.location.href = 'child.html?refresh=1'; // メイン画面に戻る
                 } else {
                     alert(`プラン変更エラー: ${data.error}`);
                 }

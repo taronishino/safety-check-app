@@ -337,6 +337,8 @@
             checkAuth();
         }
 
+
+
         async function register() {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
@@ -443,19 +445,35 @@
             }
         }
 
-        function showMainSection() {
+        async function showMainSection() {
             document.getElementById('loginSection').style.display = 'none';
             document.getElementById('mainSection').style.display = 'block';
             
             document.getElementById('userInfo').textContent = 
                 `👤 ${userInfo.name} (${userInfo.email})`;
             
-            loadParentsStatus();
-            loadSubscriptionStatus();
+            // サブスクリプションを先に読み込んでから親情報を表示
+            await loadSubscriptionStatus();
+            await loadParentsStatus();
             checkEmergencyAccess();
             showPairingSection();
             checkEmergencyResponses(); // 緊急確認応答をチェック
             checkParentReports(); // 親の安否報告をチェック
+            
+            // URLパラメータで設定変更からの戻りをチェック
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('refresh') === '1') {
+                // URLを綺麗にする
+                window.history.replaceState({}, document.title, window.location.pathname);
+                // サブスクリプション状況を強制的に再読み込み
+                setTimeout(async () => {
+                    await loadSubscriptionStatus();
+                    await loadParentsStatus(); // 親情報も再読み込みして制限メッセージを更新
+                    await checkEmergencyAccess();
+                    addLog('✅ 設定変更を反映しました', 'success');
+                }, 500);
+            }
+            
             addLog('✅ ログイン完了', 'success');
         }
 
@@ -791,24 +809,20 @@
                         addLog('❌ 位置確認はプレミアム機能です', 'error');
                         alert('位置確認はプレミアム機能です。\\nプレミアムプランにアップグレードしてください。');
                         return;
+                    } else if (errorData.error === 'Location not available') {
+                        addLog(`⚠️ 位置情報がまだ取得されていません`, 'error');
+                        alert(`${parentName}の位置情報がまだ取得されていません。\n親アプリで位置情報の共有を有効にしてください。`);
+                        return;
                     } else {
-                        // エラー時はテストデータを使用
-                        lat = 35.6762;
-                        lng = 139.6503;
-                        address = '東京都千代田区丸の内1-1-1';
-                        updatedAt = new Date().toLocaleString('ja-JP');
-                        addLog(`⚠️ 位置情報取得エラー（テストデータ表示）: ${errorData.error}`, 'error');
+                        addLog(`⚠️ 位置情報取得エラー: ${errorData.error}`, 'error');
+                        return;
                     }
                 }
             } catch (error) {
-                // エラー時はテストデータを使用
                 const parentName = parentsData.find(p => p.parent_id === parentId)?.nickname || 
                                   parentsData.find(p => p.parent_id === parentId)?.parent_name || '親';
-                lat = 35.6762;
-                lng = 139.6503;
-                address = '東京都千代田区丸の内1-1-1';
-                updatedAt = new Date().toLocaleString('ja-JP');
-                addLog(`⚠️ 位置情報取得失敗（テストデータ表示）: ${error.message}`, 'error');
+                addLog(`❌ 位置情報取得失敗: ${error.message}`, 'error');
+                return;
             }
 
             // 位置情報を表示
@@ -1154,6 +1168,13 @@
             // プラン制限の注意書き表示制御
             const isPremium = window.currentSubscription && 
                              (window.currentSubscription.plan_type === 'premium' || window.currentSubscription.is_trial_active);
+            
+            // デバッグ情報を出力
+            console.log('displayParentsStatus - プラン判定:', {
+                currentSubscription: window.currentSubscription,
+                isPremium: isPremium,
+                parentsLength: parents.length
+            });
             
             // プレミアムプランでは制限メッセージを表示しない
             if (isPremium) {

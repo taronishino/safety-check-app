@@ -76,9 +76,9 @@ export default async function handler(req, res) {
         .from('activities')
         .insert({
           user_id: parentId,
-          last_activity_at: timestamp || new Date().toISOString(),
-          device_info: 'parent-emergency-response',
-          activity_type: 'emergency_response'
+          type: 'emergency_response',
+          message: `緊急確認応答: ${status === 'safe' ? '無事です' : status === 'need_help' ? '助けが必要です' : '応答'}`,
+          created_at: timestamp || new Date().toISOString()
         });
     } catch (activityError) {
       console.log('Activity logging failed (non-critical):', activityError);

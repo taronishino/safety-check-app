@@ -308,7 +308,7 @@
     <div class="container" style="text-align: center; margin-top: 20px;">
         <button onclick="downgradePlan()" 
                 style="background: #6c757d; color: white; padding: 10px 20px; font-size: 12px; border: none; border-radius: 5px; cursor: pointer;">
-            📉 無料プランに戻る
+            ⬇️ 無料プランに戻る
         </button>
     </div>
 
@@ -888,13 +888,12 @@
                 
                 planDescription.innerHTML = `
                     ✅ 1人の親監視・基本通知<br>
-                    ❌ 複数親監視・位置情報・緊急確認
+                    ❌ 複数親監視・位置情報
                 `;
                 
                 planDetails.innerHTML = `
                     <strong>無料プランの制限:</strong><br>
                     • 監視可能な親: 1人まで<br>
-                    • 緊急確認機能は利用不可<br>
                     • 位置情報共有は利用不可
                 `;
                 
@@ -923,7 +922,7 @@
                 
                 planDescription.innerHTML = `
                     ✅ 全機能利用可能<br>
-                    位置情報・複数親監視・緊急確認
+                    位置情報・複数親監視
                 `;
             }
         }
@@ -1019,7 +1018,7 @@
 
         // プランダウングレード
         async function downgradePlan() {
-            if (!confirm('無料プランに変更しますか？\n位置情報、緊急確認などの機能が利用できなくなります。')) {
+            if (!confirm('無料プランに変更しますか？\n位置情報などの機能が利用できなくなります。')) {
                 return;
             }
 

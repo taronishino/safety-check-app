@@ -493,6 +493,12 @@
 
                 const relationshipsData = await relationshipsResponse.json();
                 parentsData = relationshipsData.relationships || [];
+                
+                // デバッグ: 親データの構造を確認
+                console.log('親データ構造:', parentsData);
+                if (parentsData.length > 0) {
+                    console.log('最初の親のデータ:', parentsData[0]);
+                }
 
                 // 通知設定を取得
                 const notificationResponse = await fetch(`${API_BASE}/api/multi-parent/notification-settings`, {
@@ -999,7 +1005,7 @@
             
             // 既に無料体験中の場合は課金ページへ
             if (subscription && subscription.is_trial_active) {
-                if (!confirm('無料体験期間中です。\n今すぐ有料プランに切り替えますか？\n\n月額980円（税込）')) {
+                if (!confirm('無料体験期間中です。\n今すぐ有料プランに切り替えますか？\n\n月額680円（税込）')) {
                     return;
                 }
                 
@@ -1009,7 +1015,7 @@
             }
             
             // 新規の場合は7日間無料体験を開始
-            if (!confirm('プレミアムプランにアップグレードしますか？\n7日間無料体験後、月額980円で全機能がご利用いただけます。')) {
+            if (!confirm('プレミアムプランにアップグレードしますか？\n7日間無料体験後、月額680円で全機能がご利用いただけます。')) {
                 return;
             }
 

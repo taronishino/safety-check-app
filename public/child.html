@@ -304,6 +304,14 @@
         <div class="log" id="logArea"></div>
     </div>
 
+    <!-- 無料プラン戻りボタン -->
+    <div class="container" style="text-align: center; margin-top: 20px;">
+        <button onclick="downgradeToBasic()" 
+                style="background: #9e9e9e; color: white; padding: 8px 16px; font-size: 12px; border: none; border-radius: 5px; cursor: pointer;">
+            📉 無料プランに戻る
+        </button>
+    </div>
+
     <script>
         const API_BASE = window.location.origin;
         let authToken = localStorage.getItem('auth_token') || localStorage.getItem('childAuthToken');
@@ -955,7 +963,6 @@
                 if (response.ok) {
                     addLog('✅ プレミアムプランにアップグレードしました', 'success');
                     await loadSubscriptionStatus(); // プラン状況を再読み込み
-                    await checkEmergencyAccess(); // 緊急確認アクセスを再チェック
                     await loadParentsStatus(); // 親の状態を再読み込み（ボタン表示更新）
                     alert('プレミアムプランにアップグレードされました！\n7日間無料体験が開始されました。\n設定画面から各機能のON/OFFが可能です。');
                 } else {
@@ -1031,9 +1038,8 @@
                 if (response.ok) {
                     addLog('✅ 無料プランに変更しました', 'success');
                     await loadSubscriptionStatus(); // プラン状況を再読み込み
-                    await checkEmergencyAccess(); // 緊急確認アクセスを再チェック
                     await loadParentsStatus(); // 親の状態を再読み込み（ボタン表示更新）
-                    alert('無料プランに変更されました。\n位置情報、緊急確認機能が制限されます。');
+                    alert('無料プランに変更されました。\n位置情報機能が制限されます。');
                 } else {
                     addLog(`❌ プラン変更エラー: ${data.error}`, 'error');
                 }

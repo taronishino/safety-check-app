@@ -25,26 +25,15 @@ export default async function handler(req, res) {
     // JWT認証
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('No authorization header');
       return res.status(401).json({ error: 'No valid authorization header' });
     }
 
     const token = authHeader.substring(7);
-    console.log('Token received, length:', token.length);
     
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const parentId = decoded.userId;
 
-    console.log('=== Emergency Status Check ===');
-    console.log('Parent ID from JWT:', parentId);
-    console.log('Parent email from JWT:', decoded.email);
     
-    // 全ての pending 緊急確認を確認（デバッグ用）
-    const { data: allPending } = await supabase
-      .from('emergency_requests')
-      .select('*')
-      .eq('status', 'pending');
-    console.log('All pending requests in DB:', allPending);
     
     // シンプルなクエリで確実に取得
     const { data: emergencyRequests, error } = await supabase
@@ -54,10 +43,6 @@ export default async function handler(req, res) {
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
       
-    console.log('Raw query result:');
-    console.log('- Error:', error);
-    console.log('- Data count:', emergencyRequests ? emergencyRequests.length : 0);
-    console.log('- First item:', emergencyRequests ? emergencyRequests[0] : null);
 
     if (error) {
       console.error('Database query failed:', error);
@@ -73,7 +58,6 @@ export default async function handler(req, res) {
     let requesterName = null;
     if (hasPendingRequests) {
       const requesterId = emergencyRequests[0].requester_id;
-      console.log('Getting requester name for ID:', requesterId, 'Parent ID:', parentId);
       
       // relationshipsテーブルからニックネームを取得
       const { data: relationship, error: relError } = await supabase
@@ -83,7 +67,6 @@ export default async function handler(req, res) {
         .eq('child_id', requesterId)
         .single();
         
-      console.log('Relationship query result:', { relationship, relError });
       
       if (relationship?.nickname) {
         requesterName = relationship.nickname;
@@ -95,7 +78,6 @@ export default async function handler(req, res) {
           .eq('id', requesterId)
           .single();
           
-        console.log('Requester query result:', { requester, requesterError });
         requesterName = requester?.name || 'Unknown';
       }
     }
@@ -106,7 +88,6 @@ export default async function handler(req, res) {
       pending_count: emergencyRequests ? emergencyRequests.length : 0
     };
 
-    console.log('Sending response:', response);
     res.status(200).json(response);
 
   } catch (error) {

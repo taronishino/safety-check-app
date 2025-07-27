@@ -34,9 +34,6 @@ export default async function handler(req, res) {
 
     const { status, message, timestamp } = req.body;
 
-    console.log('=== Emergency Response Debug ===');
-    console.log('Parent ID:', parentId);
-    console.log('Request body:', { status, message, timestamp });
 
     if (!status) {
       return res.status(400).json({ error: 'Status is required' });
@@ -51,7 +48,6 @@ export default async function handler(req, res) {
       .order('created_at', { ascending: false })
       .limit(1);
 
-    console.log('Latest pending request check:', { pendingRequests, checkError });
 
     if (checkError) {
       console.error('Pending requests check failed:', checkError);
@@ -59,12 +55,10 @@ export default async function handler(req, res) {
     }
 
     if (!pendingRequests || pendingRequests.length === 0) {
-      console.log('No pending requests found for parent_id:', parentId);
       return res.status(404).json({ error: 'No pending emergency requests found' });
     }
 
     const latestRequest = pendingRequests[0];
-    console.log('Responding to request ID:', latestRequest.id);
 
     // 特定の最新緊急確認依頼を完了状態に更新
     const { data: updatedRequests, error: updateError } = await supabase
@@ -79,7 +73,6 @@ export default async function handler(req, res) {
       .eq('status', 'pending')
       .select();
 
-    console.log('Update result:', { updatedRequests, updateError });
 
     if (updateError) {
       console.error('Emergency response update error:', {
@@ -111,7 +104,7 @@ export default async function handler(req, res) {
           created_at: timestamp || new Date().toISOString()
         });
     } catch (activityError) {
-      console.log('Activity logging failed (non-critical):', activityError);
+      // Activity logging is non-critical, ignore errors
     }
 
     res.status(200).json({

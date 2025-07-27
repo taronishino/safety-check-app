@@ -132,19 +132,6 @@
             text-align: center;
             color: #2e7d32;
         }
-        .emergency-section {
-            background: #fff5f5;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            border: 2px solid #feb2b2;
-        }
-        .emergency-title {
-            color: #c53030;
-            font-weight: bold;
-            margin-bottom: 10px;
-            text-align: center;
-        }
         .last-activity {
             font-size: 12px;
             color: #666;
@@ -236,20 +223,11 @@
                 </button>
             </div>
 
-            <!-- 緊急確認応答表示エリア -->
-            <div id="emergencyResponses" style="display: none; background: #e8f5e8; border: 2px solid #4caf50; border-radius: 10px; padding: 20px; margin-bottom: 20px;">
-                <h3 style="margin: 0 0 15px 0; color: #2e7d32;">📱 緊急確認返信</h3>
-                <div id="responseList"></div>
-                <button onclick="clearResponses()" style="background: #666; color: white; padding: 8px 16px; font-size: 12px; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px;">
-                    既読にする
-                </button>
-            </div>
 
             <!-- 親の状態表示 -->
             <div id="parentsStatus">
                 <h3>👴👵 親の安否情報</h3>
                 <div id="parentsList"></div>
-                <div id="emergencyButtons"></div>
             </div>
 
             <button class="btn btn-primary" onclick="refreshStatus()">
@@ -455,9 +433,7 @@
             // サブスクリプションを先に読み込んでから親情報を表示
             await loadSubscriptionStatus();
             await loadParentsStatus();
-            checkEmergencyAccess();
             showPairingSection();
-            checkEmergencyResponses(); // 緊急確認応答をチェック
             checkParentReports(); // 親の安否報告をチェック
             
             // URLパラメータで設定変更からの戻りをチェック
@@ -469,7 +445,6 @@
                 setTimeout(async () => {
                     await loadSubscriptionStatus();
                     await loadParentsStatus(); // 親情報も再読み込みして制限メッセージを更新
-                    await checkEmergencyAccess();
                     addLog('✅ 設定変更を反映しました', 'success');
                 }, 500);
             }
@@ -521,11 +496,9 @@
 
         function displayParentsStatus(parents, settings) {
             const parentsList = document.getElementById('parentsList');
-            const emergencyButtons = document.getElementById('emergencyButtons');
             
             if (parents.length === 0) {
                 parentsList.innerHTML = '<div class="parent-card">登録されている親がいません</div>';
-                emergencyButtons.innerHTML = '';
                 return;
             }
 
@@ -549,7 +522,6 @@
                 const status = getParentStatus(parent, setting);
                 
                 // プレミアム機能ボタンの表示制御
-                let emergencyEnabled = false;
                 let locationEnabled = false;
                 
                 // 現在のプラン状況をチェック
@@ -560,16 +532,9 @@
                     const savedSettings = localStorage.getItem('premiumSettings');
                     if (savedSettings) {
                         const parsed = JSON.parse(savedSettings);
-                        emergencyEnabled = parsed.emergency || false;
                         locationEnabled = parsed.location || false;
                     }
                 }
-                
-                const emergencyButton = emergencyEnabled ? 
-                    `<button onclick="sendEmergencyCheck('${parent.parent_id}')" 
-                             style="background: #dc3545; color: white; border: none; padding: 5px 12px; border-radius: 5px; font-size: 12px; cursor: pointer; margin-top: 5px; margin-right: 5px;">
-                        🚨 緊急確認
-                     </button>` : '';
                      
                 const locationButton = locationEnabled ? 
                     `<button onclick="checkLocation('${parent.parent_id}')" 
@@ -577,8 +542,8 @@
                         📍 位置確認
                      </button>` : '';
                      
-                const buttonContainer = (emergencyButton || locationButton) ? 
-                    `<div style="margin-top: 10px;">${emergencyButton}${locationButton}</div>` : '';
+                const buttonContainer = locationButton ? 
+                    `<div style="margin-top: 10px;">${locationButton}</div>` : '';
                 
                 return `
                     <div class="parent-card">
@@ -694,8 +659,8 @@
             }
         }
 
-        // 緊急確認機能のアクセス制御
-        async function checkEmergencyAccess() {
+        // プレミアム機能のアクセス制御
+        async function checkPremiumAccess() {
             try {
                 const response = await fetch(`${API_BASE}/api/subscription/status`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
@@ -703,13 +668,7 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    const features = data.available_features;
                     const subscription = data.subscription;
-                    
-                    // プレミアム機能の確認
-                    const canUseEmergencyCheck = features.emergency_checks;
-                    const canUseLocation = features.location_sharing;
-                    const canUseManualReport = features.manual_reports;
 
                     const settingsBtn = document.getElementById('settingsBtn');
 
@@ -735,43 +694,6 @@
             }
         }
 
-        async function sendEmergencyCheck(parentId) {
-            try {
-                // 親の名前を取得
-                const parentData = parentsData.find(p => p.parent_id === parentId);
-                const parentName = parentData?.nickname || parentData?.parent_name || '親';
-                
-                addLog(`🚨 ${parentName}に緊急確認を送信中...`, 'info');
-                
-                const response = await fetch(`${API_BASE}/api/multi-parent/emergency-check`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify({
-                        message: '緊急確認: 至急連絡をお願いします',
-                        parent_id: parentId
-                    })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    addLog(`✅ ${parentName}に緊急確認を送信しました`, 'success');
-                    alert(`${parentName}に緊急確認を送信しました。`);
-                } else {
-                    if (data.reason === 'plan_limitation') {
-                        addLog('❌ 緊急確認はプレミアム機能です', 'error');
-                        addLog('💡 プレミアムプランにアップグレードしてください', 'info');
-                    } else {
-                        addLog(`❌ 緊急確認送信エラー: ${data.error}`, 'error');
-                    }
-                }
-            } catch (error) {
-                addLog(`❌ 緊急確認送信失敗: ${error.message}`, 'error');
-            }
-        }
 
         // 位置確認機能
         async function checkLocation(parentId) {
@@ -852,7 +774,6 @@
             addLog('🔄 状況を更新中...', 'info');
             try {
                 await loadParentsStatus();
-                await checkEmergencyResponses();
                 await checkParentReports();
                 addLog('✅ 状況の更新が完了しました', 'success');
             } catch (error) {
@@ -1315,108 +1236,6 @@
             }
         }
 
-        // 緊急確認応答をチェック
-        async function checkEmergencyResponses() {
-            try {
-                const response = await fetch(`${API_BASE}/api/emergency/check-response`, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.has_new_responses && data.responses.length > 0) {
-                        showEmergencyResponses(data.responses);
-                    } else {
-                        hideEmergencyResponses();
-                    }
-                } else {
-                    console.log('緊急確認応答取得エラー:', response.status);
-                }
-            } catch (error) {
-                console.log('緊急確認応答チェックエラー:', error);
-            }
-        }
-
-        // 緊急確認応答を表示
-        function showEmergencyResponses(responses) {
-            const responseArea = document.getElementById('emergencyResponses');
-            const responseList = document.getElementById('responseList');
-            
-            responseArea.style.display = 'block';
-            
-            const responseHtml = responses.map(response => {
-                // ニックネームを優先して表示
-                const parentData = parentsData.find(p => p.parent_id === response.parent_id);
-                const parentName = parentData?.nickname || response.parent?.name || '親';
-                const responseText = response.parent_response === 'safe' ? 
-                    '✅ 大丈夫' : 
-                    response.parent_response === 'need_help' ? 
-                    '🆘 助けが必要' : 
-                    '📱 応答';
-                
-                const respondedTime = new Date(response.responded_at).toLocaleString('ja-JP', {
-                    month: 'numeric',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit'
-                });
-                
-                return `
-                    <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid ${response.parent_response === 'safe' ? '#4caf50' : '#f44336'};">
-                        <div style="font-weight: bold; margin-bottom: 5px;">${parentName}から</div>
-                        <div style="font-size: 16px; margin-bottom: 5px;">${responseText}</div>
-                        <div style="font-size: 12px; color: #666;">${response.response_message || ''}</div>
-                        <div style="font-size: 11px; color: #999; margin-top: 5px;">${respondedTime}</div>
-                    </div>
-                `;
-            }).join('');
-            
-            responseList.innerHTML = responseHtml;
-            
-            // 全ての応答者名を取得してログに表示
-            const responderNames = responses.map(response => {
-                const parentData = parentsData.find(p => p.parent_id === response.parent_id);
-                return parentData?.nickname || response.parent?.name || '親';
-            });
-            
-            if (responderNames.length > 0) {
-                addLog(`📱 緊急確認返信を受信: ${responderNames.join('、')}から計${responses.length}件`, 'info');
-            } else {
-                addLog(`📱 緊急確認返信を${responses.length}件受信しました`, 'info');
-            }
-        }
-
-        // 緊急確認応答を非表示
-        function hideEmergencyResponses() {
-            document.getElementById('emergencyResponses').style.display = 'none';
-        }
-
-        // 応答を既読にする
-        async function clearResponses() {
-            try {
-                addLog('📱 既読処理中...', 'info');
-                
-                const response = await fetch(`${API_BASE}/api/emergency/mark-read`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    hideEmergencyResponses();
-                    addLog(`📱 緊急確認返信を既読にしました (${data.marked_read}件)`, 'success');
-                } else {
-                    const errorData = await response.json();
-                    addLog(`❌ 既読処理エラー: ${errorData.error}`, 'error');
-                }
-            } catch (error) {
-                addLog(`❌ 既読処理失敗: ${error.message}`, 'error');
-            }
-        }
 
         // 親の安否報告を取得
         async function checkParentReports() {
@@ -1513,7 +1332,6 @@
         setInterval(() => {
             if (authToken && userInfo) {
                 loadParentsStatus(); // 親の状態を再読み込み（最終操作時間の表示が更新される）
-                checkEmergencyResponses(); // 緊急確認応答もチェック
                 checkParentReports(); // 親の安否報告もチェック
             }
         }, 60000); // 60秒 = 1分間隔

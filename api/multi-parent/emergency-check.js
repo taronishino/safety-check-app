@@ -34,11 +34,6 @@ export default async function handler(req, res) {
 
     const { parent_id, message } = req.body;
 
-    console.log('=== Emergency Check Debug ===');
-    console.log('Child ID:', childId);
-    console.log('Request body:', req.body);
-    console.log('Parent ID:', parent_id);
-    console.log('Message:', message);
 
     if (!parent_id || !message) {
       return res.status(400).json({ error: 'Parent ID and message are required' });
@@ -65,7 +60,6 @@ export default async function handler(req, res) {
     }
 
     // 親子関係の確認
-    console.log('Checking relationship:', { parent_id, child_id: childId });
     const { data: relationship, error: relError } = await supabase
       .from('relationships')
       .select('*')
@@ -73,14 +67,12 @@ export default async function handler(req, res) {
       .eq('child_id', childId)
       .single();
       
-    console.log('Relationship check result:', { relationship, relError });
 
     if (relError || !relationship) {
       return res.status(403).json({ error: 'No relationship found' });
     }
 
     // 同じ親への古いpending依頼をクリーンアップ
-    console.log('Cleaning up old pending requests for parent:', parent_id);
     await supabase
       .from('emergency_requests')
       .update({ status: 'expired' })
@@ -88,12 +80,6 @@ export default async function handler(req, res) {
       .eq('status', 'pending');
 
     // 緊急確認を記録（emergency_requestsテーブル使用）
-    console.log('Inserting emergency request:', {
-      requester_id: childId,
-      parent_id: parent_id,
-      message: message,
-      status: 'pending'
-    });
 
     const { data: emergencyCheck, error: insertError } = await supabase
       .from('emergency_requests')
@@ -106,7 +92,6 @@ export default async function handler(req, res) {
       .select()
       .single();
 
-    console.log('Insert result:', { emergencyCheck, insertError });
 
     if (insertError) {
       console.error('Emergency check insert error:', insertError);
@@ -128,7 +113,6 @@ export default async function handler(req, res) {
       .single();
 
     // プッシュ通知は将来の実装として、現在は親アプリでのポーリングに依存
-    console.log(`Emergency check created: ID ${emergencyCheck.id} from child ${childId} to parent ${parent_id}`);
 
     res.status(200).json({
       success: true,
@@ -144,7 +128,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Emergency check error:', error);
-    console.error('Stack trace:', error.stack);
     
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
       return res.status(401).json({ error: 'Invalid token' });
